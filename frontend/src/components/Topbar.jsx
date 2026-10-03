@@ -14,6 +14,7 @@ export default function Topbar() {
     if (pathname === '/' || pathname === '/dashboard') return 'Overview';
     if (pathname.startsWith('/students/')) return 'Student profile';
     if (pathname.startsWith('/faculty/')) return 'Faculty profile';
+    if (pathname.startsWith('/users/')) return 'User details';
     const key = pathname.slice(1);
     if (key === 'settings') return 'College settings';
     if (key === 'notifications') return 'Notifications';

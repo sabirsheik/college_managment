@@ -1,6 +1,7 @@
 export const permissions = {
   dashboardRead: 'dashboard.read',
   collegeSettingsRead: 'college-settings.read',
+  collegeSettingsUpdate: 'college-settings.update',
   notificationsRead: 'notifications.read',
   auditLogsRead: 'audit-logs.read',
   usersRead: 'users.read',

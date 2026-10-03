@@ -36,7 +36,7 @@ export function validateResourceBody(resource, body, partial = false) {
           throw new HttpError(400, `${key} must be a valid HTTP or HTTPS URL.`);
         }
       }
-      values[key] = clean;
+      values[key] = rule.type === 'email' ? clean.toLowerCase() : clean;
       continue;
     }
 

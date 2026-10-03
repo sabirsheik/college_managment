@@ -35,10 +35,20 @@ export async function login(req, res) {
     throw new HttpError(401, 'Invalid email or password.');
   }
 
-  const token = jwt.sign({ sub: String(user.id) }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+  const token = jwt.sign({ sub: String(user.id), ver: user.token_version }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
   const expiresAt = jwt.decode(token).exp * 1000;
-  await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
-  await writeAudit(req, 'LOGIN', 'USER', user.id);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
+    await writeAudit(req, 'LOGIN', 'USER', user.id, {}, client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
   res.cookie(authCookieName, token, { ...cookieOptions, maxAge: Math.max(0, expiresAt - Date.now()) });
   res.json({ success: true, message: 'Signed in successfully.', data: { user: publicUser({ ...user, permissions: [] }) } });
 }
@@ -63,7 +73,29 @@ export async function changePassword(req, res) {
     throw new HttpError(400, 'Current password is incorrect.');
   }
   const hash = await bcrypt.hash(newPassword, 12);
-  await pool.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, req.user.id]);
-  await writeAudit(req, 'UPDATE', 'USER_PASSWORD', req.user.id);
+  const client = await pool.connect();
+  let update;
+  try {
+    await client.query('BEGIN');
+    update = await client.query(
+      `UPDATE users SET password_hash = $1, token_version = token_version + 1,
+         updated_at = NOW() WHERE id = $2 RETURNING token_version`,
+      [hash, req.user.id]
+    );
+    await writeAudit(req, 'UPDATE', 'USER_PASSWORD', req.user.id, {}, client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+  const token = jwt.sign(
+    { sub: String(req.user.id), ver: update.rows[0].token_version },
+    env.jwtSecret,
+    { expiresIn: env.jwtExpiresIn }
+  );
+  const expiresAt = jwt.decode(token).exp * 1000;
+  res.cookie(authCookieName, token, { ...cookieOptions, maxAge: Math.max(0, expiresAt - Date.now()) });
   res.json({ success: true, message: 'Password changed successfully.', data: null });
 }

@@ -60,9 +60,9 @@ export async function listRecords(resource, query) {
   };
 }
 
-export async function getRecord(resource, id) {
+export async function getRecord(resource, id, db = pool) {
   const extra = resource.labels ? `, ${resource.labels}` : '';
-  const result = await pool.query(
+  const result = await db.query(
     `SELECT r.*${extra} FROM ${resource.table} r ${resource.joins} WHERE r.id = $1`,
     [id]
   );
@@ -78,49 +78,39 @@ function mapValues(resource, input) {
   return values;
 }
 
-export async function createRecord(resource, input) {
+export async function createRecord(resource, input, db = pool) {
   const values = mapValues(resource, input);
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    if (resource.table === 'students' || resource.table === 'faculty') {
-      const sequence = resource.table;
-      const { rows } = await client.query(
-        `SELECT nextval(pg_get_serial_sequence($1, 'id')) AS id`,
-        [sequence]
-      );
-      values.id = rows[0].id;
-      const identifier = `${resource.table === 'students' ? 'STU' : 'EMP'}-${String(values.id).padStart(6, '0')}`;
-      if (resource.table === 'students') {
-        values.student_id = identifier;
-        values.student_number = values.student_number || identifier;
-        values.enrollment_year = new Date().getUTCFullYear();
-      } else {
-        values.employee_id = identifier;
-      }
-    }
-    const insertKeys = Object.keys(values);
-    const placeholders = insertKeys.map((_, index) => `$${index + 1}`).join(', ');
-    const result = await client.query(
-      `INSERT INTO ${resource.table} (${insertKeys.join(', ')})
-       VALUES (${placeholders}) RETURNING *`,
-      insertKeys.map((key) => values[key])
+  if (resource.table === 'students' || resource.table === 'faculty') {
+    const sequence = resource.table;
+    const { rows } = await db.query(
+      `SELECT nextval(pg_get_serial_sequence($1, 'id')) AS id`,
+      [sequence]
     );
-    await client.query('COMMIT');
-    return result.rows[0];
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
+    values.id = rows[0].id;
+    const identifier = `${resource.table === 'students' ? 'STU' : 'EMP'}-${String(values.id).padStart(6, '0')}`;
+    if (resource.table === 'students') {
+      values.student_id = identifier;
+      values.student_number = values.student_number || identifier;
+      values.enrollment_year = new Date().getUTCFullYear();
+    } else {
+      values.employee_id = identifier;
+    }
   }
+  const insertKeys = Object.keys(values);
+  const placeholders = insertKeys.map((_, index) => `$${index + 1}`).join(', ');
+  const result = await db.query(
+    `INSERT INTO ${resource.table} (${insertKeys.join(', ')})
+     VALUES (${placeholders}) RETURNING *`,
+    insertKeys.map((key) => values[key])
+  );
+  return result.rows[0];
 }
 
-export async function updateRecord(resource, id, input) {
+export async function updateRecord(resource, id, input, db = pool) {
   const values = mapValues(resource, input);
   const keys = Object.keys(values);
   const assignments = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
-  const result = await pool.query(
+  const result = await db.query(
     `UPDATE ${resource.table} SET ${assignments}${resource.table === 'enrollments' ? '' : ', updated_at = NOW()'}
      WHERE id = $${keys.length + 1} RETURNING *`,
     [...keys.map((key) => values[key]), id]
@@ -129,8 +119,8 @@ export async function updateRecord(resource, id, input) {
   return result.rows[0];
 }
 
-export async function deleteRecord(resource, id) {
-  const result = await pool.query(
+export async function deleteRecord(resource, id, db = pool) {
+  const result = await db.query(
     `DELETE FROM ${resource.table} WHERE id = $1 RETURNING id`,
     [id]
   );

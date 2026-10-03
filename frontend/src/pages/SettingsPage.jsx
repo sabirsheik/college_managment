@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { permissions } from '../constants/permissions.js';
 import { api } from '../services/api.js';
 
 const fields = [
@@ -18,6 +20,8 @@ const fields = [
 ];
 
 export default function SettingsPage() {
+  const { can } = useAuth();
+  const canUpdate = can(permissions.collegeSettingsUpdate);
   const notify = useToast();
   const [values, setValues] = useState({});
   const [loading, setLoading] = useState(true);
@@ -59,12 +63,12 @@ export default function SettingsPage() {
               <label className={type === 'textarea' ? 'field-wide' : ''} key={key}>
                 <span>{label}{required && <b className="required"> *</b>}</span>
                 {type === 'textarea'
-                  ? <textarea rows="3" required={required} value={values[key] || ''} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />
-                  : <input type={type || 'text'} required={required} value={values[key] || ''} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />}
+                  ? <textarea rows="3" required={required} disabled={!canUpdate} value={values[key] || ''} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />
+                  : <input type={type || 'text'} required={required} disabled={!canUpdate} value={values[key] || ''} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />}
               </label>
             ))}
           </div>
-          <div className="settings-actions"><span>Changes are saved to the college profile immediately.</span><button className="button button-primary" disabled={saving}>{saving ? 'Saving…' : 'Save settings'}</button></div>
+          <div className="settings-actions"><span>{canUpdate ? 'Changes are saved to the college profile immediately.' : 'You have read-only access to institutional settings.'}</span>{canUpdate && <button className="button button-primary" disabled={saving}>{saving ? 'Saving…' : 'Save settings'}</button>}</div>
         </>}
       </form>
     </div>

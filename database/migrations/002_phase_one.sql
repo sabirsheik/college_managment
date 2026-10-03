@@ -26,6 +26,7 @@ CREATE TABLE users (
   phone VARCHAR(30),
   role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  token_version INTEGER NOT NULL DEFAULT 0,
   last_login_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -66,6 +67,7 @@ CREATE TABLE academic_sessions (
 );
 CREATE UNIQUE INDEX academic_sessions_one_current_idx
   ON academic_sessions (is_current) WHERE is_current = TRUE;
+CREATE INDEX academic_sessions_status_dates_idx ON academic_sessions (status, start_date, end_date);
 
 CREATE TABLE programs (
   id SERIAL PRIMARY KEY,
@@ -81,6 +83,7 @@ CREATE TABLE programs (
   UNIQUE (department_id, name),
   CHECK (status IN ('ACTIVE', 'INACTIVE'))
 );
+CREATE INDEX programs_status_department_idx ON programs (status, department_id);
 
 ALTER TABLE departments
   ADD COLUMN description TEXT,
@@ -119,7 +122,7 @@ ALTER TABLE students
     CHECK (status IN ('ACTIVE', 'INACTIVE', 'GRADUATED', 'SUSPENDED', 'WITHDRAWN'));
 ALTER TABLE students ALTER COLUMN enrollment_year SET DEFAULT EXTRACT(YEAR FROM CURRENT_DATE)::integer;
 CREATE INDEX students_program_session_status_idx ON students (program_id, academic_session_id, status);
-CREATE INDEX students_registration_number_idx ON students (registration_number);
+CREATE UNIQUE INDEX students_email_lower_unique ON students (LOWER(email));
 
 ALTER TABLE faculty
   ADD COLUMN employee_id VARCHAR(30) UNIQUE,
@@ -135,7 +138,7 @@ ALTER TABLE faculty
   ADD CONSTRAINT faculty_employment_status_check
     CHECK (employment_status IN ('ACTIVE', 'INACTIVE', 'ON_LEAVE', 'RESIGNED'));
 CREATE INDEX faculty_department_status_idx ON faculty (department_id, employment_status);
-CREATE INDEX faculty_employee_id_idx ON faculty (employee_id);
+CREATE UNIQUE INDEX faculty_email_lower_unique ON faculty (LOWER(email));
 
 ALTER TABLE courses
   ADD COLUMN course_code VARCHAR(20),
@@ -159,7 +162,6 @@ ALTER TABLE courses ALTER COLUMN code DROP NOT NULL;
 ALTER TABLE courses ALTER COLUMN title DROP NOT NULL;
 ALTER TABLE courses ALTER COLUMN credits DROP NOT NULL;
 CREATE INDEX courses_program_status_idx ON courses (program_id, status);
-CREATE INDEX courses_code_idx ON courses (course_code);
 
 CREATE TABLE audit_logs (
   id SERIAL PRIMARY KEY,

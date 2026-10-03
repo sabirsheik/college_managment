@@ -51,10 +51,21 @@ export async function updateSettings(req, res) {
   const values = entries.map(([key, rule]) =>
     body[key] == null ? null : rule.email ? body[key].trim().toLowerCase() : body[key].trim()
   );
-  const result = await pool.query(
-    `UPDATE college_settings SET ${assignments}, updated_at = NOW() WHERE id = 1 RETURNING *`,
-    values
-  );
-  await writeAudit(req, 'UPDATE', 'COLLEGE_SETTINGS', '1');
+  const client = await pool.connect();
+  let result;
+  try {
+    await client.query('BEGIN');
+    result = await client.query(
+      `UPDATE college_settings SET ${assignments}, updated_at = NOW() WHERE id = 1 RETURNING *`,
+      values
+    );
+    await writeAudit(req, 'UPDATE', 'COLLEGE_SETTINGS', '1', {}, client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
   res.json({ success: true, message: 'College settings updated successfully.', data: result.rows[0] });
 }

@@ -154,9 +154,11 @@ export default function ResourcePage() {
             onDelete={remove}
             onView={config.detailPath ? (row) => navigate(config.detailPath(row)) : undefined}
             onReset={(row) => { setResetRecord(row); setResetError(''); }}
-            canReset={resource === 'users' && can('users.reset-password')}
+            canReset={resource === 'users' && can(permissionFor(resource, 'reset-password'))}
             canUpdate={canUpdate}
             canDelete={canDelete}
+            deleteAllowed={resource === 'users' ? (row) => row.is_active : undefined}
+            emptyMessage={debouncedSearch || Object.values(filters).some(Boolean) ? 'No matching records found' : undefined}
             deleteLabel={resource === 'users' ? 'Deactivate' : 'Delete'}
           />}
         <div className="pagination">

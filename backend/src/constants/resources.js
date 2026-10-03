@@ -69,6 +69,7 @@ export const resources = {
       first_name: { type: 'string', required: true, max: 80 },
       last_name: { type: 'string', required: true, max: 80 },
       email: { type: 'email', required: true, max: 254 },
+      user_id: { type: 'integer', nullable: true },
       date_of_birth: { type: 'date', nullable: true },
       profile_image: { type: 'url', nullable: true, max: 1000 },
       gender: { type: 'string', nullable: true, max: 30 },
@@ -110,6 +111,7 @@ export const resources = {
     fields: {
       ...personFields,
       phone: { type: 'string', nullable: true, max: 30 },
+      user_id: { type: 'integer', nullable: true },
       department_id: { type: 'integer', required: true },
       designation: { type: 'string', nullable: true, max: 120 },
       qualification: { type: 'string', nullable: true, max: 160 },

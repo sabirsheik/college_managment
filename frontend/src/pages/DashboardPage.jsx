@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { resourcePermission } from '../constants/permissions.js';
+import { permissions, resourcePermission } from '../constants/permissions.js';
 import { api } from '../services/api.js';
 
 const cards = [
@@ -38,7 +38,7 @@ export default function DashboardPage() {
           <h2>Welcome back, {user?.first_name}</h2>
           <p>A live view of your college’s academic operations.</p>
         </div>
-        {can('students.create') && <Link className="button button-primary" to="/students">＋ Add a student</Link>}
+        {can(resourcePermission('students', 'create')) && <Link className="button button-primary" to="/students">＋ Add a student</Link>}
       </div>
       {error && <div className="notice-error" role="alert">{error}</div>}
       <div className="stat-grid">
@@ -55,7 +55,7 @@ export default function DashboardPage() {
         <span className="session-mark">AY</span>
         <div><span className="eyebrow">CURRENT ACADEMIC SESSION</span><strong>{data?.currentAcademicSession?.name || (loading ? 'Loading…' : 'Not set')}</strong></div>
         {data?.currentAcademicSession && <span className="session-dates">{date(data.currentAcademicSession.start_date)} — {date(data.currentAcademicSession.end_date)}</span>}
-        {can('academic-sessions.read') && <Link to="/academic-sessions">Manage sessions <span aria-hidden="true">→</span></Link>}
+        {can(permissions.academicSessionsRead) && <Link to="/academic-sessions">Manage sessions <span aria-hidden="true">→</span></Link>}
       </section>
       <div className="dashboard-columns">
         <section className="panel dashboard-panel">
@@ -85,7 +85,7 @@ export default function DashboardPage() {
       </div>
       <div className="dashboard-columns bottom-panels">
         <section className="panel">
-          <div className="panel-heading"><div><span className="eyebrow">ADMINISTRATION</span><h3>Recent activity</h3></div>{can('audit-logs.read') && <Link className="subtle-link" to="/audit-logs">Audit log →</Link>}</div>
+          <div className="panel-heading"><div><span className="eyebrow">ADMINISTRATION</span><h3>Recent activity</h3></div>{can(permissions.auditLogsRead) && <Link className="subtle-link" to="/audit-logs">Audit log →</Link>}</div>
           {data?.recentActivity.length ? <div className="activity-list compact-list">
             {data.recentActivity.map((activity) => (
               <div className="activity-row" key={activity.id}>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
           </div> : <div className="empty-activity">{loading ? 'Loading activity…' : 'No recent activity available.'}</div>}
         </section>
         <section className="panel">
-          <div className="panel-heading"><div><span className="eyebrow">YOUR INBOX</span><h3>Notifications</h3></div>{can('notifications.read') && <Link className="subtle-link" to="/notifications">View all →</Link>}</div>
+          <div className="panel-heading"><div><span className="eyebrow">YOUR INBOX</span><h3>Notifications</h3></div>{can(permissions.notificationsRead) && <Link className="subtle-link" to="/notifications">View all →</Link>}</div>
           {data?.notifications.length ? <div className="activity-list compact-list">
             {data.notifications.map((notice) => (
               <div className="activity-row" key={notice.id}>

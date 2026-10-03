@@ -6,6 +6,7 @@ import { authRouter } from './authRoutes.js';
 import { resourceRouter } from './resourceRoutes.js';
 import { getDashboard } from '../controllers/dashboardController.js';
 import { listAuditLogs } from '../controllers/auditController.js';
+import { getHealth } from '../controllers/healthController.js';
 import { listRoles } from '../controllers/roleController.js';
 import { listNotifications, markAllRead, markRead } from '../controllers/notificationController.js';
 import { getSettings, updateSettings } from '../controllers/settingsController.js';
@@ -13,7 +14,7 @@ import { listUsers, createUser, getUser, updateUser, resetPassword, deactivateUs
 
 export const apiRouter = Router();
 
-apiRouter.get('/health', (_req, res) => res.json({ status: 'ok' }));
+apiRouter.get('/health', asyncHandler(getHealth));
 apiRouter.use('/auth', authRouter);
 apiRouter.use(authenticate);
 apiRouter.get('/dashboard', requirePermission('dashboard.read'), asyncHandler(getDashboard));

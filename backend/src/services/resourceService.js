@@ -5,6 +5,7 @@ import {
   createRecord, deleteRecord, getRecord, listRecords, updateRecord
 } from '../repositories/resourceRepository.js';
 import { validateResourceBody } from '../validators/resourceValidators.js';
+import { writeAudit } from '../utils/audit.js';
 
 export function getResource(name) {
   const resource = Object.hasOwn(resources, name) ? resources[name] : undefined;
@@ -16,6 +17,9 @@ async function assertSessionDates(values, excludeId, db = pool) {
   const { start_date: startDate, end_date: endDate } = values;
   if (startDate && endDate && endDate < startDate) {
     throw new HttpError(400, 'Session end date cannot be before its start date.');
+  }
+  if (values.is_current && values.status !== 'ACTIVE') {
+    throw new HttpError(400, 'The current academic session must be active.');
   }
   if (!startDate || !endDate) return;
   const result = await db.query(
@@ -37,25 +41,42 @@ function ownFields(resource, body) {
 export const listResourceRecords = (name, query) => listRecords(getResource(name), query);
 export const getResourceRecord = (name, id) => getRecord(getResource(name), id);
 
-async function validateRelationships(name, values, id) {
-  if (name === 'students' || name === 'courses') {
+async function validateRelationships(name, values, id, db = pool) {
+  if (name === 'students' || name === 'courses' || name === 'faculty') {
     const current = id
-      ? await pool.query(`SELECT department_id, program_id FROM ${resources[name].table} WHERE id = $1`, [id])
+      ? await db.query(`SELECT * FROM ${resources[name].table} WHERE id = $1`, [id])
       : { rows: [] };
     if (id && !current.rowCount) throw new HttpError(404, 'Record not found.');
-    const departmentId = values.department_id ?? current.rows[0]?.department_id;
-    const programId = values.program_id ?? current.rows[0]?.program_id;
-    if (programId != null) {
-      const result = await pool.query(
+    const departmentId = Object.hasOwn(values, 'department_id') ? values.department_id : current.rows[0]?.department_id;
+    const programId = Object.hasOwn(values, 'program_id') ? values.program_id : current.rows[0]?.program_id;
+    if ((name === 'students' || name === 'courses') && programId != null) {
+      const result = await db.query(
         'SELECT 1 FROM programs WHERE id = $1 AND department_id = $2',
         [programId, departmentId]
       );
       if (!result.rowCount) throw new HttpError(400, 'The selected program must belong to the selected department.');
     }
+    if (name === 'students' || name === 'faculty') {
+      const userId = Object.hasOwn(values, 'user_id') ? values.user_id : current.rows[0]?.user_id;
+      const linkChanged = Object.hasOwn(values, 'user_id') ||
+        (Object.hasOwn(values, 'email') && userId != null);
+      if (linkChanged && userId != null) {
+        const email = values.email ?? current.rows[0]?.email;
+        const role = name === 'students' ? 'STUDENT' : 'FACULTY';
+        const result = await db.query(
+          `SELECT 1 FROM users u JOIN roles r ON r.id = u.role_id
+           WHERE u.id = $1 AND LOWER(u.email) = LOWER($2) AND u.is_active AND r.name = $3`,
+          [userId, email, role]
+        );
+        if (!result.rowCount) {
+          throw new HttpError(400, `Linked account must be an active ${role} user with the same email address.`);
+        }
+      }
+    }
   }
   if (name === 'departments' && values.head_of_department != null) {
     if (!id) throw new HttpError(400, 'Assign the department head after creating the department.');
-    const result = await pool.query(
+    const result = await db.query(
       'SELECT 1 FROM faculty WHERE id = $1 AND department_id = $2',
       [values.head_of_department, id]
     );
@@ -63,27 +84,23 @@ async function validateRelationships(name, values, id) {
   }
 }
 
-export async function createResourceRecord(name, body) {
+export async function createResourceRecord(name, body, req) {
   const resource = getResource(name);
   ownFields(resource, body);
   const values = validateResourceBody(resource, body);
-  await validateRelationships(name, values);
-  if (name !== 'academic-sessions') return createRecord(resource, values);
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock(7351, 2)');
-    await assertSessionDates(values, null, client);
-    if (values.is_current) await client.query('UPDATE academic_sessions SET is_current = FALSE WHERE is_current');
-    const keys = Object.keys(values);
-    const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ');
-    const result = await client.query(
-      `INSERT INTO academic_sessions (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`,
-      keys.map((key) => values[key])
-    );
+    if (name === 'academic-sessions') {
+      await client.query('SELECT pg_advisory_xact_lock(7351, 2)');
+      await assertSessionDates(values, null, client);
+      if (values.is_current) await client.query('UPDATE academic_sessions SET is_current = FALSE WHERE is_current');
+    }
+    await validateRelationships(name, values, undefined, client);
+    const record = await createRecord(resource, values, client);
+    await writeAudit(req, 'CREATE', resource.table, record.id, {}, client);
     await client.query('COMMIT');
-    return result.rows[0];
+    return record;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -92,32 +109,33 @@ export async function createResourceRecord(name, body) {
   }
 }
 
-export async function updateResourceRecord(name, id, body) {
+export async function updateResourceRecord(name, id, body, req) {
   const resource = getResource(name);
   ownFields(resource, body);
   const values = validateResourceBody(resource, body, true);
-  await validateRelationships(name, values, id);
-  if (name !== 'academic-sessions') return updateRecord(resource, id, values);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock(7351, 2)');
-    const currentResult = await client.query('SELECT * FROM academic_sessions WHERE id = $1 FOR UPDATE', [id]);
-    if (!currentResult.rowCount) throw new HttpError(404, 'Record not found.');
-    const current = currentResult.rows[0];
-    await assertSessionDates({ ...current, ...values }, id, client);
-    if (values.is_current) {
-      await client.query('UPDATE academic_sessions SET is_current = FALSE WHERE is_current AND id <> $1', [id]);
+    let current;
+    if (name === 'academic-sessions') {
+      await client.query('SELECT pg_advisory_xact_lock(7351, 2)');
+      const currentResult = await client.query('SELECT * FROM academic_sessions WHERE id = $1 FOR UPDATE', [id]);
+      if (!currentResult.rowCount) throw new HttpError(404, 'Record not found.');
+      current = currentResult.rows[0];
+      await assertSessionDates({ ...current, ...values }, id, client);
+      if (values.is_current) {
+        await client.query('UPDATE academic_sessions SET is_current = FALSE WHERE is_current AND id <> $1', [id]);
+      }
+    } else {
+      current = await getRecord(resource, id, client);
     }
-    const keys = Object.keys(values);
-    const assignments = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
-    const result = await client.query(
-      `UPDATE academic_sessions SET ${assignments}, updated_at = NOW()
-       WHERE id = $${keys.length + 1} RETURNING *`,
-      [...keys.map((key) => values[key]), id]
-    );
+    await validateRelationships(name, values, id, client);
+    const record = await updateRecord(resource, id, values, client);
+    const action = values.status === 'ACTIVE' ? 'ACTIVATE'
+      : values.status === 'INACTIVE' ? 'DEACTIVATE' : 'UPDATE';
+    await writeAudit(req, action, resource.table, id, {}, client);
     await client.query('COMMIT');
-    return result.rows[0];
+    return record;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -125,4 +143,19 @@ export async function updateResourceRecord(name, id, body) {
     client.release();
   }
 }
-export const deleteResourceRecord = (name, id) => deleteRecord(getResource(name), id);
+
+export async function deleteResourceRecord(name, id, req) {
+  const resource = getResource(name);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await deleteRecord(resource, id, client);
+    await writeAudit(req, 'DELETE', resource.table, id, {}, client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}

@@ -12,6 +12,7 @@ import ResourcePage from '../pages/ResourcePage.jsx';
 import SettingsPage from '../pages/SettingsPage.jsx';
 import StudentProfilePage from '../pages/StudentProfilePage.jsx';
 import { permissions } from '../constants/permissions.js';
+import UserProfilePage from '../pages/UserProfilePage.jsx';
 
 export default function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export default function AppRoutes() {
           </Route>
           <Route element={<ProtectedRoute permission={permissions.usersRead} />}>
             <Route path="users" element={<ResourcePage />} />
+            <Route path="users/:id" element={<UserProfilePage />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.studentsRead} />}>
             <Route path="students" element={<ResourcePage />} />

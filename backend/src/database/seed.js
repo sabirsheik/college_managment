@@ -76,7 +76,11 @@ try {
   await client.query(`
     INSERT INTO college_settings (id, college_name, city, country, timezone, currency)
     VALUES (1, 'Northstar College', 'Example City', 'Example Country', 'UTC', 'USD')
-    ON CONFLICT (id) DO NOTHING
+    ON CONFLICT (id) DO UPDATE SET
+      college_name = EXCLUDED.college_name,
+      city = EXCLUDED.city,
+      country = EXCLUDED.country
+    WHERE college_settings.college_name = 'College'
   `);
   await client.query(`
     INSERT INTO departments (name, code, description, status) VALUES
@@ -130,6 +134,13 @@ try {
     FROM departments d JOIN programs p ON p.code = 'BSCS'
     WHERE d.code = 'CS'
     ON CONFLICT (code) DO NOTHING
+  `);
+  await client.query(`
+    INSERT INTO enrollments (student_id, course_id, semester, status)
+    SELECT s.id, c.id, 'Fall 2026', 'enrolled'
+    FROM students s CROSS JOIN courses c
+    WHERE s.registration_number = 'REG-DEMO-001' AND c.course_code = 'CS-101'
+    ON CONFLICT (student_id, course_id, semester) DO NOTHING
   `);
   await client.query('COMMIT');
   console.log('Development roles, permissions, accounts, and sample academic records are ready.');

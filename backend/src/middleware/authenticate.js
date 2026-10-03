@@ -24,14 +24,8 @@ export async function authenticate(req, _res, next) {
       throw new HttpError(401, 'Session is invalid or expired. Please sign in again.');
     }
 
-    export function authenticateOptional(req, res, next) {
-      return authenticate(req, res, (error) => {
-        if (error) return next();
-        next();
-      });
-    }
     const result = await pool.query(
-      `SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, r.name AS role,
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.token_version, r.name AS role,
         COALESCE(array_agg(p.name) FILTER (WHERE p.name IS NOT NULL), '{}') AS permissions
        FROM users u
        JOIN roles r ON r.id = u.role_id
@@ -42,10 +36,19 @@ export async function authenticate(req, _res, next) {
       [claims.sub]
     );
     const user = result.rows[0];
-    if (!user || !user.is_active) throw new HttpError(401, 'Account is unavailable.');
+    if (!user || !user.is_active || claims.ver !== user.token_version) {
+      throw new HttpError(401, 'Account is unavailable.');
+    }
     req.user = user;
     next();
   } catch (error) {
     next(error);
   }
+}
+
+export function authenticateOptional(req, res, next) {
+  return authenticate(req, res, (error) => {
+    if (error) return next();
+    next();
+  });
 }

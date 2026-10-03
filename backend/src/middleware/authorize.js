@@ -11,7 +11,9 @@ export function requirePermission(permission) {
 
 export function requireResourcePermission(action) {
   return (req, _res, next) => {
-    const resource = resources[req.params.resource];
+    const resource = Object.hasOwn(resources, req.params.resource)
+      ? resources[req.params.resource]
+      : undefined;
     if (!resource) return next(new HttpError(404, 'Unknown resource.'));
     return requirePermission(`${resource.permission}.${action}`)(req, _res, next);
   };

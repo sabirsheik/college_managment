@@ -126,17 +126,31 @@ export async function getUser(req, res) {
 export async function createUser(req, res) {
   const { password, ...personFields } = req.body || {};
   const fields = validatePerson(personFields);
+  if (fields.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+    throw new HttpError(403, 'Only a SUPER_ADMIN can create another SUPER_ADMIN.');
+  }
   if (typeof password !== 'string' || password.length < 12) {
     throw new HttpError(400, 'password must be at least 12 characters.');
   }
   const hash = await bcrypt.hash(password, 12);
-  const result = await pool.query(
-    `INSERT INTO users (email, password_hash, first_name, last_name, phone, role_id)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING id, email, first_name, last_name, phone, is_active, created_at`,
-    [fields.email, hash, fields.first_name, fields.last_name, fields.phone || null, await roleId(fields.role)]
-  );
-  await writeAudit(req, 'CREATE', 'USER', result.rows[0].id, { role: fields.role });
+  const client = await pool.connect();
+  let result;
+  try {
+    await client.query('BEGIN');
+    result = await client.query(
+      `INSERT INTO users (email, password_hash, first_name, last_name, phone, role_id, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, email, first_name, last_name, phone, is_active, created_at`,
+      [fields.email, hash, fields.first_name, fields.last_name, fields.phone || null, await roleId(fields.role, client), fields.is_active ?? true]
+    );
+    await writeAudit(req, 'CREATE', 'USER', result.rows[0].id, { role: fields.role }, client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
   res.status(201).json({
     success: true, message: 'User created successfully.',
     data: { ...result.rows[0], role: fields.role }
@@ -158,6 +172,12 @@ export async function updateUser(req, res) {
 
     const losingAdmin = current.rows[0].role === 'SUPER_ADMIN' &&
       (fields.is_active === false || (fields.role && fields.role !== 'SUPER_ADMIN'));
+    if (losingAdmin && req.user.role !== 'SUPER_ADMIN') {
+      throw new HttpError(403, 'Only a SUPER_ADMIN can reassign or deactivate a SUPER_ADMIN.');
+    }
+    if (fields.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+      throw new HttpError(403, 'Only a SUPER_ADMIN can assign the SUPER_ADMIN role.');
+    }
     if (losingAdmin) {
       await client.query('SELECT pg_advisory_xact_lock(7351, 1)');
       await assertNotLastSuperAdmin(id, client);
@@ -182,8 +202,8 @@ export async function updateUser(req, res) {
        RETURNING id, email, first_name, last_name, phone, is_active, created_at, updated_at`,
       values
     );
+    await writeAudit(req, fields.is_active === false ? 'DEACTIVATE' : 'UPDATE', 'USER', id, {}, client);
     await client.query('COMMIT');
-    await writeAudit(req, fields.is_active === false ? 'DEACTIVATE' : 'UPDATE', 'USER', id);
     res.json({
       success: true, message: 'User updated successfully.',
       data: { ...result.rows[0], role: fields.role || current.rows[0].role }
@@ -216,10 +236,14 @@ export async function deactivateUser(req, res) {
     );
     if (!current.rowCount) throw new HttpError(404, 'Active user not found.');
     if (current.rows[0].role === 'SUPER_ADMIN') {
+      if (req.user.role !== 'SUPER_ADMIN') {
+        throw new HttpError(403, 'Only a SUPER_ADMIN can deactivate another SUPER_ADMIN.');
+      }
       await client.query('SELECT pg_advisory_xact_lock(7351, 1)');
       await assertNotLastSuperAdmin(id, client);
     }
     await client.query('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = $1', [id]);
+    await writeAudit(req, 'DEACTIVATE', 'USER', id, {}, client);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -227,22 +251,39 @@ export async function deactivateUser(req, res) {
   } finally {
     client.release();
   }
-  await writeAudit(req, 'DEACTIVATE', 'USER', id);
   res.json({ success: true, message: 'User deactivated successfully.', data: null });
 }
 
 export async function resetPassword(req, res) {
   const id = idParam(req.params.id);
+  const target = await pool.query(
+    `SELECT r.name AS role FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
+    [id]
+  );
+  if (!target.rowCount) throw new HttpError(404, 'User not found.');
+  if (target.rows[0].role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+    throw new HttpError(403, 'Only a SUPER_ADMIN can reset a SUPER_ADMIN password.');
+  }
   const password = req.body?.password;
   if (typeof password !== 'string' || password.length < 12) {
     throw new HttpError(400, 'password must be at least 12 characters.');
   }
   const hash = await bcrypt.hash(password, 12);
-  const result = await pool.query(
-    'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
-    [hash, id]
-  );
-  if (!result.rowCount) throw new HttpError(404, 'User not found.');
-  await writeAudit(req, 'UPDATE', 'USER_PASSWORD', id);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(
+      'UPDATE users SET password_hash = $1, token_version = token_version + 1, updated_at = NOW() WHERE id = $2 RETURNING id',
+      [hash, id]
+    );
+    if (!result.rowCount) throw new HttpError(404, 'User not found.');
+    await writeAudit(req, 'UPDATE', 'USER_PASSWORD', id, {}, client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
   res.json({ success: true, message: 'Password reset successfully.', data: null });
 }

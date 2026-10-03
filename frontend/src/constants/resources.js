@@ -4,6 +4,7 @@ export const resourceConfig = {
     singular: 'user',
     icon: 'US',
     permission: 'users',
+    detailPath: (row) => `/users/${row.id}`,
     columns: [
       { key: 'name', label: 'Name', render: (row) => `${row.first_name} ${row.last_name}` },
       { key: 'email', label: 'Email' },
@@ -15,6 +16,7 @@ export const resourceConfig = {
       { key: 'first_name', label: 'First name', required: true },
       { key: 'last_name', label: 'Last name', required: true },
       { key: 'email', label: 'Email address', type: 'email', required: true },
+      { key: 'user_id', label: 'Campus user account', option: 'users', optionLabel: 'email', nullable: true },
       { key: 'phone', label: 'Phone number' },
       { key: 'role', label: 'Role', option: 'roles', optionLabel: 'name', required: true },
       { key: 'is_active', label: 'Account status', options: [['true', 'Active'], ['false', 'Inactive']], type: 'boolean', editOnly: true },
@@ -66,10 +68,15 @@ export const resourceConfig = {
         ['SUSPENDED', 'Suspended'], ['WITHDRAWN', 'Withdrawn']
       ], required: true }
     ],
-    filters: [{ key: 'status', label: 'All statuses', options: [
-      ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['GRADUATED', 'Graduated'],
-      ['SUSPENDED', 'Suspended'], ['WITHDRAWN', 'Withdrawn']
-    ] }],
+    filters: [
+      { key: 'status', label: 'All statuses', options: [
+        ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['GRADUATED', 'Graduated'],
+        ['SUSPENDED', 'Suspended'], ['WITHDRAWN', 'Withdrawn']
+      ] },
+      { key: 'department_id', label: 'All departments', optionsSource: 'departments', optionValue: 'id', optionLabel: 'name' },
+      { key: 'program_id', label: 'All programs', optionsSource: 'programs', optionValue: 'id', optionLabel: 'name' },
+      { key: 'academic_session_id', label: 'All sessions', optionsSource: 'academic-sessions', optionValue: 'id', optionLabel: 'name' }
+    ],
     sortFields: ['student_id', 'registration_number', 'first_name', 'last_name', 'admission_date', 'status', 'created_at']
   },
   faculty: {
@@ -90,6 +97,7 @@ export const resourceConfig = {
       { key: 'last_name', label: 'Last name', required: true },
       { key: 'email', label: 'Email address', type: 'email', required: true },
       { key: 'phone', label: 'Phone' },
+      { key: 'user_id', label: 'Campus user account', option: 'users', optionLabel: 'email', nullable: true },
       { key: 'department_id', label: 'Department', option: 'departments', required: true },
       { key: 'designation', label: 'Designation' },
       { key: 'qualification', label: 'Qualification' },
@@ -100,9 +108,12 @@ export const resourceConfig = {
         ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['ON_LEAVE', 'On leave'], ['RESIGNED', 'Resigned']
       ], required: true }
     ],
-    filters: [{ key: 'employment_status', label: 'All statuses', options: [
-      ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['ON_LEAVE', 'On leave'], ['RESIGNED', 'Resigned']
-    ] }],
+    filters: [
+      { key: 'employment_status', label: 'All statuses', options: [
+        ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['ON_LEAVE', 'On leave'], ['RESIGNED', 'Resigned']
+      ] },
+      { key: 'department_id', label: 'All departments', optionsSource: 'departments', optionValue: 'id', optionLabel: 'name' }
+    ],
     sortFields: ['employee_id', 'first_name', 'last_name', 'designation', 'joining_date', 'employment_status', 'created_at']
   },
   departments: {
@@ -123,7 +134,9 @@ export const resourceConfig = {
       { key: 'head_of_department', label: 'Department head', option: 'faculty', nullable: true, editOnly: true },
       { key: 'status', label: 'Status', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']], required: true }
     ],
-    filters: [{ key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']] }],
+    filters: [
+      { key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']] }
+    ],
     sortFields: ['name', 'code', 'status', 'created_at']
   },
   'academic-sessions': {
@@ -145,7 +158,10 @@ export const resourceConfig = {
       { key: 'is_current', label: 'Current session', options: [['true', 'Yes'], ['false', 'No']], type: 'boolean', required: true },
       { key: 'status', label: 'Status', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['COMPLETED', 'Completed']], required: true }
     ],
-    filters: [{ key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['COMPLETED', 'Completed']] }],
+    filters: [
+      { key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive'], ['COMPLETED', 'Completed']] },
+      { key: 'is_current', label: 'Current / past', options: [['true', 'Current'], ['false', 'Not current']] }
+    ],
     sortFields: ['name', 'start_date', 'end_date', 'status', 'created_at']
   },
   programs: {
@@ -158,7 +174,6 @@ export const resourceConfig = {
       { key: 'name', label: 'Program' },
       { key: 'degree_level', label: 'Degree level' },
       { key: 'department_name', label: 'Department' },
-      { key: 'faculty_name', label: 'Instructor' },
       { key: 'duration_years', label: 'Duration' },
       { key: 'status', label: 'Status', badge: true }
     ],
@@ -171,7 +186,10 @@ export const resourceConfig = {
       { key: 'description', label: 'Description' },
       { key: 'status', label: 'Status', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']], required: true }
     ],
-    filters: [{ key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']] }],
+    filters: [
+      { key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']] },
+      { key: 'department_id', label: 'All departments', optionsSource: 'departments', optionValue: 'id', optionLabel: 'name' }
+    ],
     sortFields: ['name', 'code', 'degree_level', 'duration_years', 'status', 'created_at']
   },
   courses: {
@@ -199,7 +217,12 @@ export const resourceConfig = {
       { key: 'description', label: 'Description' },
       { key: 'status', label: 'Status', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']], required: true }
     ],
-    filters: [{ key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']] }],
+    filters: [
+      { key: 'status', label: 'All statuses', options: [['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']] },
+      { key: 'department_id', label: 'All departments', optionsSource: 'departments', optionValue: 'id', optionLabel: 'name' },
+      { key: 'program_id', label: 'All programs', optionsSource: 'programs', optionValue: 'id', optionLabel: 'name' },
+      { key: 'semester', label: 'All semesters', options: Array.from({ length: 20 }, (_, index) => [String(index + 1), `Semester ${index + 1}`]) }
+    ],
     sortFields: ['course_code', 'name', 'credit_hours', 'semester', 'status', 'created_at']
   },
   enrollments: {
