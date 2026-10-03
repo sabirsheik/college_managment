@@ -1,0 +1,33 @@
+import { Router } from 'express';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { authenticate } from '../middleware/authenticate.js';
+import { requirePermission } from '../middleware/authorize.js';
+import { authRouter } from './authRoutes.js';
+import { resourceRouter } from './resourceRoutes.js';
+import { getDashboard } from '../controllers/dashboardController.js';
+import { listAuditLogs } from '../controllers/auditController.js';
+import { listRoles } from '../controllers/roleController.js';
+import { listNotifications, markAllRead, markRead } from '../controllers/notificationController.js';
+import { getSettings, updateSettings } from '../controllers/settingsController.js';
+import { listUsers, createUser, getUser, updateUser, resetPassword, deactivateUser } from '../controllers/userController.js';
+
+export const apiRouter = Router();
+
+apiRouter.get('/health', (_req, res) => res.json({ status: 'ok' }));
+apiRouter.use('/auth', authRouter);
+apiRouter.use(authenticate);
+apiRouter.get('/dashboard', requirePermission('dashboard.read'), asyncHandler(getDashboard));
+apiRouter.get('/audit-logs', requirePermission('audit-logs.read'), asyncHandler(listAuditLogs));
+apiRouter.get('/college-settings', requirePermission('college-settings.read'), asyncHandler(getSettings));
+apiRouter.patch('/college-settings', requirePermission('college-settings.update'), asyncHandler(updateSettings));
+apiRouter.get('/users', requirePermission('users.read'), asyncHandler(listUsers));
+apiRouter.get('/roles', requirePermission('roles.read'), asyncHandler(listRoles));
+apiRouter.post('/users', requirePermission('users.create'), asyncHandler(createUser));
+apiRouter.get('/users/:id', requirePermission('users.read'), asyncHandler(getUser));
+apiRouter.patch('/users/:id', requirePermission('users.update'), asyncHandler(updateUser));
+apiRouter.post('/users/:id/reset-password', requirePermission('users.reset-password'), asyncHandler(resetPassword));
+apiRouter.delete('/users/:id', requirePermission('users.delete'), asyncHandler(deactivateUser));
+apiRouter.get('/notifications', requirePermission('notifications.read'), asyncHandler(listNotifications));
+apiRouter.patch('/notifications/read-all', requirePermission('notifications.read'), asyncHandler(markAllRead));
+apiRouter.patch('/notifications/:id/read', requirePermission('notifications.read'), asyncHandler(markRead));
+apiRouter.use('/', resourceRouter);
