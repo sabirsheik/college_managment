@@ -1,9 +1,10 @@
 # Campus College Management
 
-Phase 1 foundation for a secure, multi-role college administration platform.
-The application includes session authentication, database-backed RBAC, academic
-records, institutional settings, notifications, audit events, and a responsive
-administrative workspace.
+College management platform with a secure Phase 1 foundation and Phase 2
+academic and operational workflows. The application includes session
+authentication, database-backed RBAC, academic records and schedules,
+attendance, exams and grades, GPA, student finances, documents, reports,
+notifications, audit events, and a responsive administrative workspace.
 
 ## Technology
 
@@ -69,6 +70,26 @@ credentials or seed data in production.
 - Dashboard summary, per-user notifications, and restricted audit log
 - Search, filters, sorting, pagination, validation, empty/loading/error states,
   and student/faculty profiles
+
+## Phase 2 workflows
+
+- Classrooms, academic sections, course assignments, course enrollment, and
+  conflict-checked weekly timetables
+- Attendance sessions and records, faculty assignment checks, student-owned
+  attendance views, and administrative reports
+- Exams, configurable percentage-based grade scales, server-calculated marks
+  and grades, published final-grade GPA/CGPA summaries
+- Program/session/semester fee structures, student fee balances, transactional
+  payments, unique receipts, printable invoices and receipts
+- Student document metadata with provider-neutral storage keys, faculty
+  workload, and filtered academic reports
+- Role-specific Phase 2 permissions; student academic and financial API reads
+  are scoped to the signed-in student's linked record
+
+Apply all database migrations (including `003_phase_two.sql`) before starting
+the Phase 2 API. Existing MVP enrollment rows are retained; only newly created
+Phase 2 enrollments include the academic session and numeric semester used for
+duplicate prevention and reporting.
 
 ## Tests and builds
 

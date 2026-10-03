@@ -35,7 +35,8 @@ export default function ResourceForm({ config, record, onClose, onSave }) {
     setError('');
     setSaving(true);
     const visibleFields = config.fields.filter((field) =>
-      (!field.createOnly || !record) && (!field.editOnly || record)
+      (!field.createOnly || !record) && (!field.editOnly || record) &&
+      (!field.updateOnly || record)
     );
     const data = Object.fromEntries(visibleFields.map((field) => {
       const value = values[field.key];
@@ -66,7 +67,8 @@ export default function ResourceForm({ config, record, onClose, onSave }) {
         <form onSubmit={submit}>
           <div className="form-grid">
             {config.fields.filter((field) =>
-              (!field.createOnly || !record) && (!field.editOnly || record)
+              (!field.createOnly || !record) && (!field.editOnly || record) &&
+              (!field.updateOnly || record)
             ).map((field) => (
               <label key={field.key} className={field.wide ? 'field-wide' : ''}>
                 <span>{field.label}{field.required ? <b className="required"> *</b> : ''}</span>
@@ -91,8 +93,8 @@ export default function ResourceForm({ config, record, onClose, onSave }) {
                     type={field.type === 'boolean' ? 'text' : field.type || 'text'}
                     value={values[field.key]}
                     required={field.required}
-                    min={field.key === 'enrollment_year' ? 1900 : field.key === 'credits' ? 1 : undefined}
-                    max={field.key === 'enrollment_year' ? 2200 : field.key === 'credits' ? 30 : undefined}
+                    min={field.min ?? (field.key === 'enrollment_year' ? 1900 : field.key === 'credits' ? 1 : undefined)}
+                    max={field.max ?? (field.key === 'enrollment_year' ? 2200 : field.key === 'credits' ? 30 : undefined)}
                     minLength={field.minLength}
                     step={field.step}
                     onChange={(event) => change(field.key, event.target.value)}

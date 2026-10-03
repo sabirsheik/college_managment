@@ -35,7 +35,7 @@ a { color: inherit; text-decoration: none; }
 .brand span { display: block; color: #a2aab5; font-size: 8px; font-weight: 700; letter-spacing: 1.1px; margin-top: 3px; }
 .nav-caption, .eyebrow { color: #9aa3b0; font-size: 10px; letter-spacing: 1.1px; font-weight: 700; }
 .nav-caption { padding: 0 11px; margin: 0 0 10px; }
-.sidebar nav { display: grid; gap: 4px; }
+.sidebar nav { display: grid; align-content: start; gap: 4px; flex: 1; min-height: 0; overflow-y: auto; }
 .sidebar nav a { min-height: 43px; display: flex; align-items: center; gap: 13px; padding: 0 11px; color: #737f8e; border-radius: 8px; font-size: 13px; font-weight: 500; transition: .15s ease; }
 .sidebar nav a:hover { background: #f7f7fc; color: var(--purple); }
 .sidebar nav a.active { color: var(--purple); background: #f1efff; font-weight: 700; }
@@ -53,6 +53,7 @@ a { color: inherit; text-decoration: none; }
 .today { color: #7b8795; font-size: 12px; }
 .page-content { padding: 34px 42px 30px; max-width: 1500px; margin: 0 auto; }
 .welcome-row, .resource-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 27px; }
+.heading-actions { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
 .welcome-row h2, .resource-heading h2 { font: 700 23px Manrope, sans-serif; letter-spacing: -.8px; margin: 7px 0 5px; }
 .welcome-row p, .resource-heading p { color: #8c96a4; margin: 0; font-size: 13px; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 7px; min-height: 39px; padding: 0 15px; font-weight: 600; font-size: 12px; transition: .15s ease; }
@@ -252,6 +253,61 @@ tbody tr:hover { background: #fcfcfe; }
 .status-graduated, .status-completed { color: #536ec2; background: #edf1ff; }
 .status-super_admin, .status-admin { color: #6657bb; background: #f1efff; }
 .status-faculty, .status-student, .status-accountant, .status-librarian { color: #697587; background: #f0f2f5; }
+.status-present, .status-paid, .status-approved { color: #29966d; background: #e9f8f1; }
+.status-late, .status-partial, .status-scheduled, .status-pending { color: #b87638; background: #fff4e8; }
+.status-absent, .status-cancelled, .status-rejected, .status-due { color: #a26060; background: #fff0ef; }
+.status-excused { color: #536ec2; background: #edf1ff; }
+
+.attendance-panel { overflow: hidden; }
+.attendance-filters { display: flex; align-items: end; gap: 13px; padding: 19px; border-bottom: 1px solid var(--line); }
+.attendance-filters label { display: grid; gap: 7px; min-width: 190px; color: #596474; font-size: 10px; font-weight: 600; }
+.attendance-filters input, .attendance-filters select, .attendance-panel td input, .attendance-panel td select { height: 36px; border: 1px solid #e3e7ed; border-radius: 6px; padding: 0 9px; color: var(--ink); background: white; font-size: 11px; }
+.attendance-panel td input { min-width: 155px; }
+.attendance-panel td select { min-width: 125px; }
+.attendance-actions { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; color: var(--muted); font-size: 11px; }
+.print-document { max-width: 850px; margin: 0 auto; padding: 45px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.print-document-header { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 25px; border-bottom: 2px solid var(--ink); }
+.print-document-header h1 { margin: 9px 0 0; font: 700 26px Manrope, sans-serif; }
+.print-document-number { text-align: right; }
+.print-document-number strong, .print-document-number span, .print-document-meta span, .print-document-meta strong, .print-document-meta small { display: block; }
+.print-document-number strong { font-size: 14px; }
+.print-document-number span, .print-document-meta span { margin-top: 5px; color: var(--muted); font-size: 10px; }
+.print-document-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 25px 0; }
+.print-document-meta strong { margin-top: 7px; font-size: 12px; }
+.print-document-meta small { color: var(--muted); font-size: 10px; margin-top: 4px; }
+.print-total { display: flex; justify-content: flex-end; align-items: center; gap: 25px; padding: 20px 14px; border-top: 1px solid var(--line); color: #6f7b89; font-size: 12px; }
+.print-total strong { color: var(--ink); font-size: 18px; }
+.print-document-footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); color: #697587; font-size: 11px; }
+.print-document-footer p { color: var(--muted); font-size: 10px; }
+.exam-create-panel, .result-entry-panel, .grade-scale-panel, .grade-records, .gpa-panel, .report-panel, .attendance-summary { margin-bottom: 18px; }
+.exam-form, .grade-scale-form { padding: 0 20px 20px; }
+.exam-form label, .grade-scale-form label, .report-filters label, .gpa-lookup label, .result-entry-row label { display: grid; gap: 7px; color: #596474; font-size: 10px; font-weight: 600; }
+.exam-form input, .exam-form select, .grade-scale-form input, .report-filters input, .report-filters select, .gpa-lookup input, .result-entry-row input { height: 36px; border: 1px solid #e3e7ed; border-radius: 6px; padding: 0 9px; color: var(--ink); background: #fff; font-size: 11px; }
+.form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+.result-entry-panel form { padding: 0 20px 20px; }
+.workflow-hint { color: var(--muted); font-size: 11px; line-height: 1.6; }
+.result-entry-row { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) auto; gap: 12px; align-items: end; padding: 10px 0; border-top: 1px solid var(--line); }
+.result-entry-row { grid-template-columns: minmax(180px, 1fr) minmax(160px, 260px); }
+.roster-student { display: grid; gap: 4px; align-self: center; font-size: 11px; }
+.roster-student span, .roster-student small { color: var(--muted); font-size: 10px; }
+.report-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 20px; border-bottom: 1px solid var(--line); }
+.report-filters > .button { align-self: end; }
+.gpa-lookup { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 0 20px 20px; }
+.gpa-lookup label { min-width: 220px; }
+.gpa-score { margin-left: auto; display: grid; gap: 3px; color: var(--muted); font-size: 10px; }
+.gpa-score strong { color: var(--purple); font: 700 26px Manrope, sans-serif; }
+.gpa-term { padding: 16px 20px; border-top: 1px solid var(--line); }
+.gpa-term > strong, .gpa-term > span { display: inline-block; margin-right: 14px; font-size: 11px; }
+.gpa-term > span { color: var(--muted); }
+.gpa-term .table-scroll { margin-top: 10px; }
+.attendance-summary { margin-bottom: 18px; }
+@media print {
+  body { background: #fff; }
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .main-area { margin: 0; }
+  .page-content { max-width: none; padding: 0; }
+  .print-document { max-width: none; border: 0; border-radius: 0; padding: 20mm; }
+}
 
 @media (max-width: 1100px) {
   .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -275,6 +331,13 @@ tbody tr:hover { background: #fcfcfe; }
   .signout-button { font-size: 10px; }
   .page-content { padding: 25px 17px; }
   .welcome-row, .resource-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .heading-actions { width: 100%; flex-wrap: wrap; }
+  .attendance-filters { align-items: stretch; flex-direction: column; }
+  .attendance-filters label { min-width: 0; }
+  .report-filters { grid-template-columns: 1fr; }
+  .result-entry-row { grid-template-columns: 1fr; }
+  .print-document { padding: 22px 15px; }
+  .print-document-meta { grid-template-columns: 1fr; gap: 13px; }
   .welcome-row h2, .resource-heading h2 { font-size: 20px; }
   .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .stat-card { min-height: 153px; padding: 14px; }

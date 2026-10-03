@@ -13,6 +13,12 @@ import SettingsPage from '../pages/SettingsPage.jsx';
 import StudentProfilePage from '../pages/StudentProfilePage.jsx';
 import { permissions } from '../constants/permissions.js';
 import UserProfilePage from '../pages/UserProfilePage.jsx';
+import AttendanceMarkPage from '../pages/AttendanceMarkPage.jsx';
+import PrintableDocumentPage from '../pages/PrintableDocumentPage.jsx';
+import AttendancePage from '../pages/AttendancePage.jsx';
+import ExamsPage from '../pages/ExamsPage.jsx';
+import GradesPage from '../pages/GradesPage.jsx';
+import AcademicReportsPage from '../pages/AcademicReportsPage.jsx';
 
 export default function AppRoutes() {
   return (
@@ -26,31 +32,78 @@ export default function AppRoutes() {
             <Route path="dashboard" element={<DashboardPage />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.usersRead} />}>
-            <Route path="users" element={<ResourcePage />} />
+            <Route path="users" element={<ResourcePage resource="users" />} />
             <Route path="users/:id" element={<UserProfilePage />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.studentsRead} />}>
-            <Route path="students" element={<ResourcePage />} />
+            <Route path="students" element={<ResourcePage resource="students" />} />
             <Route path="students/:id" element={<StudentProfilePage />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.facultyRead} />}>
-            <Route path="faculty" element={<ResourcePage />} />
+            <Route path="faculty" element={<ResourcePage resource="faculty" />} />
             <Route path="faculty/:id" element={<FacultyProfilePage />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.departmentsRead} />}>
-            <Route path="departments" element={<ResourcePage />} />
+            <Route path="departments" element={<ResourcePage resource="departments" />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.academicSessionsRead} />}>
-            <Route path="academic-sessions" element={<ResourcePage />} />
+            <Route path="academic-sessions" element={<ResourcePage resource="academic-sessions" />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.programsRead} />}>
-            <Route path="programs" element={<ResourcePage />} />
+            <Route path="programs" element={<ResourcePage resource="programs" />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.coursesRead} />}>
-            <Route path="courses" element={<ResourcePage />} />
+            <Route path="courses" element={<ResourcePage resource="courses" />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.enrollmentsRead} />}>
-            <Route path="enrollments" element={<ResourcePage />} />
+            <Route path="enrollments" element={<ResourcePage resource="enrollments" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.classroomsRead} />}>
+            <Route path="classrooms" element={<ResourcePage resource="classrooms" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.sectionsRead} />}>
+            <Route path="sections" element={<ResourcePage resource="sections" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.courseAssignmentsRead} />}>
+            <Route path="course-assignments" element={<ResourcePage resource="course-assignments" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.timetableRead} />}>
+            <Route path="timetable" element={<ResourcePage resource="timetable" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.attendanceView} />}>
+            <Route path="attendance" element={<AttendancePage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.attendanceManage} />}>
+            <Route path="attendance/mark" element={<AttendanceMarkPage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.examsView} />}>
+            <Route path="exams" element={<ExamsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.gradesView} />}>
+            <Route path="grades" element={<GradesPage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.feesView} />}>
+            <Route path="fees" element={<ResourcePage resource="fees" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.feesView} />}>
+            <Route path="fee-structures" element={<ResourcePage resource="fee-structures" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.invoicesView} />}>
+            <Route path="invoices" element={<ResourcePage resource="invoices" />} />
+            <Route path="invoices/:id" element={<PrintableDocumentPage type="invoice" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.paymentsView} />}>
+            <Route path="payments" element={<ResourcePage resource="payments" />} />
+            <Route path="receipts/:id" element={<PrintableDocumentPage type="receipt" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.documentsView} />}>
+            <Route path="student-documents" element={<ResourcePage resource="student-documents" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.facultyWorkloadView} />}>
+            <Route path="faculty-workload" element={<ResourcePage resource="faculty-workload" />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.reportsView} />}>
+            <Route path="academic-reports" element={<AcademicReportsPage />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.collegeSettingsRead} />}>
             <Route path="settings" element={<SettingsPage />} />

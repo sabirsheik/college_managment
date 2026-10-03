@@ -82,6 +82,39 @@ async function validateRelationships(name, values, id, db = pool) {
     );
     if (!result.rowCount) throw new HttpError(400, 'Department head must be a faculty member in this department.');
   }
+  if (name === 'students') {
+    const currentResult = id
+      ? await db.query('SELECT section_id, status FROM students WHERE id=$1', [id])
+      : { rows: [] };
+    const sectionId = Object.hasOwn(values, 'section_id')
+      ? values.section_id
+      : currentResult.rows[0]?.section_id;
+    const status = Object.hasOwn(values, 'status')
+      ? values.status
+      : currentResult.rows[0]?.status;
+    if (sectionId != null && status === 'ACTIVE') {
+      const section = await db.query('SELECT capacity FROM sections WHERE id=$1 FOR UPDATE', [sectionId]);
+      if (!section.rowCount) throw new HttpError(400, 'The selected academic section does not exist.');
+      const count = await db.query(
+        "SELECT COUNT(*)::int AS total FROM students WHERE section_id=$1 AND status='ACTIVE' AND ($2::integer IS NULL OR id<>$2)",
+        [sectionId, id ?? null]
+      );
+      if (count.rows[0].total >= section.rows[0].capacity) {
+        throw new HttpError(409, 'The selected academic section is at capacity.');
+      }
+      const scheduledRoom = await db.query(
+        `SELECT r.capacity FROM timetable t
+         JOIN course_assignments ca ON ca.id=t.course_assignment_id
+         JOIN classrooms r ON r.id=t.classroom_id
+         WHERE ca.section_id=$1 AND ca.status='ACTIVE' AND r.status='ACTIVE'
+         ORDER BY r.capacity LIMIT 1`,
+        [sectionId]
+      );
+      if (scheduledRoom.rowCount && count.rows[0].total + 1 > scheduledRoom.rows[0].capacity) {
+        throw new HttpError(409, 'The selected academic section is at the scheduled classroom capacity.');
+      }
+    }
+  }
 }
 
 export async function createResourceRecord(name, body, req) {

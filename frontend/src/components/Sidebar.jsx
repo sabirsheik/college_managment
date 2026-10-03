@@ -11,12 +11,13 @@ export default function Sidebar() {
       to: `/${to}`,
       label: item.label,
       icon: item.icon,
-      permission: resourcePermission(item.permission, 'read')
+      permission: item.navigationPermission || resourcePermission(item.permission, 'read'),
+      permissions: item.navigationPermissions
     })),
     { to: '/settings', label: 'College settings', icon: 'CS', permission: permissions.collegeSettingsRead },
     { to: '/notifications', label: 'Notifications', icon: 'NT', permission: permissions.notificationsRead },
     { to: '/audit-logs', label: 'Audit log', icon: 'AL', permission: permissions.auditLogsRead }
-  ].filter((link) => can(link.permission));
+  ].filter((link) => link.permissions ? link.permissions.some(can) : can(link.permission));
 
   return (
     <aside className="sidebar">

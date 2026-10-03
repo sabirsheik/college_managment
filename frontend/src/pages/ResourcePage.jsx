@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ResourceForm from '../components/ResourceForm.jsx';
 import ResourceTable from '../components/ResourceTable.jsx';
 import { permissionFor, resourceConfig } from '../constants/resources.js';
@@ -7,11 +7,14 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
 
-export default function ResourcePage() {
+export default function ResourcePage({ resource: resourceProp }) {
   const { resource } = useParams();
-  const config = resourceConfig[resource];
+  const location = useLocation();
+  const resourceKey = resourceProp || resource || location.pathname.split('/').filter(Boolean)[0];
+  const config = resourceConfig[resourceKey];
+  const apiResource = config.apiPath || resourceKey;
   const navigate = useNavigate();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const notify = useToast();
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
@@ -48,7 +51,7 @@ export default function ResourcePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.list(resource, {
+      const response = await api.list(apiResource, {
         page,
         limit: 20,
         q: debouncedSearch,
@@ -56,22 +59,23 @@ export default function ResourcePage() {
         order: 'asc',
         ...filters
       });
-      setRows(response.data);
-      setMeta(response.meta);
+      const rowsData = Array.isArray(response.data) ? response.data : [];
+      setRows(rowsData);
+      setMeta(response.meta || { page: 1, limit: rowsData.length || 20, total: rowsData.length, totalPages: 1 });
       setError('');
     } catch (cause) {
       setError(cause.message);
     } finally {
       setLoading(false);
     }
-  }, [resource, page, debouncedSearch, sort, filters]);
+  }, [resourceKey, apiResource, page, debouncedSearch, sort, filters]);
 
   useEffect(() => { load(); }, [load]);
 
   async function save(data) {
     const creating = !formRecord;
-    if (creating) await api.create(resource, data);
-    else await api.update(resource, formRecord.id, data);
+    if (creating) await api.create(apiResource, data);
+    else await api.update(apiResource, formRecord.id, data);
     setFormRecord(undefined);
     notify(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} ${creating ? 'created' : 'updated'} successfully.`);
     if (page !== 1) setPage(1);
@@ -81,11 +85,11 @@ export default function ResourcePage() {
   async function remove(row) {
     const label = row.name || row.title || row.code || row.student_id ||
       row.registration_number || `${row.first_name || ''} ${row.last_name || ''}`.trim() || `#${row.id}`;
-    const action = resource === 'users' ? 'Deactivate' : 'Delete';
+    const action = resourceKey === 'users' ? 'Deactivate' : 'Delete';
     if (!window.confirm(`${action} ${config.singular} "${label}"?`)) return;
     try {
-      await api.remove(resource, row.id);
-      notify(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} ${resource === 'users' ? 'deactivated' : 'deleted'} successfully.`);
+      await api.remove(apiResource, row.id);
+      notify(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} ${resourceKey === 'users' ? 'deactivated' : 'deleted'} successfully.`);
       await load();
     } catch (cause) {
       setError(cause.message);
@@ -115,15 +119,19 @@ export default function ResourcePage() {
     setPage(1);
   }
 
-  const canCreate = can(permissionFor(resource, 'create'));
-  const canUpdate = can(permissionFor(resource, 'update'));
-  const canDelete = can(permissionFor(resource, 'delete'));
+  const studentView = user?.role === 'STUDENT';
+  const canCreate = !studentView && !config.readOnly && can(permissionFor(resourceKey, 'create'));
+  const canUpdate = !studentView && !config.readOnly && !config.noUpdate && can(permissionFor(resourceKey, 'update'));
+  const canDelete = !studentView && !config.readOnly && !config.noDelete && can(permissionFor(resourceKey, 'delete'));
 
   return (
     <div className="page-content">
       <div className="resource-heading">
-        <div><span className="eyebrow">ACADEMIC OPERATIONS / RECORDS</span><h2>{config.label}</h2><p>Review and manage {config.label.toLowerCase()} across your college.</p></div>
-        {canCreate && <button className="button button-primary" onClick={() => setFormRecord(null)}>＋ Add {config.singular}</button>}
+        <div><span className="eyebrow">ACADEMIC OPERATIONS / RECORDS</span><h2>{config.label}</h2><p>{studentView ? `Review your ${config.label.toLowerCase()} records.` : config.readOnly ? `Review ${config.label.toLowerCase()} available to your account.` : `Review and manage ${config.label.toLowerCase()} available to your account.`} The server enforces record-level access.</p></div>
+        <div className="heading-actions">
+          {resourceKey === 'fees' && can('fees.manage') && <button className="button button-secondary" onClick={() => navigate('/fee-structures')}>Fee structures</button>}
+          {canCreate && <button className="button button-primary" onClick={() => setFormRecord(null)}>＋ Add {config.singular}</button>}
+        </div>
       </div>
       <section className="panel resource-panel">
         <div className="table-toolbar">
@@ -154,12 +162,13 @@ export default function ResourcePage() {
             onDelete={remove}
             onView={config.detailPath ? (row) => navigate(config.detailPath(row)) : undefined}
             onReset={(row) => { setResetRecord(row); setResetError(''); }}
-            canReset={resource === 'users' && can(permissionFor(resource, 'reset-password'))}
+            canReset={resourceKey === 'users' && can(permissionFor(resourceKey, 'reset-password'))}
+            viewLabel={config.detailLabel}
             canUpdate={canUpdate}
             canDelete={canDelete}
-            deleteAllowed={resource === 'users' ? (row) => row.is_active : undefined}
+            deleteAllowed={resourceKey === 'users' ? (row) => row.is_active : undefined}
             emptyMessage={debouncedSearch || Object.values(filters).some(Boolean) ? 'No matching records found' : undefined}
-            deleteLabel={resource === 'users' ? 'Deactivate' : 'Delete'}
+            deleteLabel={resourceKey === 'users' ? 'Deactivate' : 'Delete'}
           />}
         <div className="pagination">
           <span>Showing {meta.total ? (meta.page - 1) * meta.limit + 1 : 0}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total.toLocaleString()}</span>
@@ -171,7 +180,7 @@ export default function ResourcePage() {
         </div>
       </section>
       {formRecord !== undefined && <ResourceForm
-        key={`${resource}-${formRecord?.id ?? 'new'}`}
+        key={`${resourceKey}-${formRecord?.id ?? 'new'}`}
         config={config}
         record={formRecord}
         onClose={() => setFormRecord(undefined)}

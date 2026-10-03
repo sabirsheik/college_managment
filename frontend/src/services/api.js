@@ -33,5 +33,14 @@ export const api = {
     method: 'PATCH', body: JSON.stringify(data)
   }),
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
-  markAllNotificationsRead: () => request('/notifications/read-all', { method: 'PATCH' })
+  markAllNotificationsRead: () => request('/notifications/read-all', { method: 'PATCH' }),
+  attendanceRoster: (params) => request(`/attendance/roster${queryString(params)}`),
+  markAttendance: (data) => request('/attendance/sessions', { method: 'POST', body: JSON.stringify(data) }),
+  examRoster: (id) => request(`/exams/${id}/roster`),
+  saveExamResults: (id, data) => request(`/exams/${id}/results`, { method: 'PUT', body: JSON.stringify(data) }),
+  publishExam: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
+  gpa: (studentId = 'me', params = {}) => request(`/gpa/${studentId}${queryString(params)}`),
+  reports: (type, params = {}) => request(`/reports/${type}${queryString(params)}`),
+  createFeeStructure: (data) => request('/fees/structures', { method: 'POST', body: JSON.stringify(data) }),
+  createGradeScale: (data) => request('/grades/scale', { method: 'POST', body: JSON.stringify(data) })
 };

@@ -2,6 +2,7 @@ export default function ResourceTable({
   columns, rows, resource, onEdit, onDelete, onView,
   onReset, canReset = false, canUpdate = true, canDelete = true, deleteAllowed,
   emptyMessage,
+  viewLabel = 'Profile',
   deleteLabel = 'Delete'
 }) {
   if (rows.length === 0) {
@@ -17,16 +18,23 @@ export default function ResourceTable({
             <tr key={row.id}>
               {columns.map((column) => {
                 const value = column.render ? column.render(row) : row[column.key];
+                const link = column.link ? row[column.link] : '';
+                const safeLink = typeof link === 'string' && (link.startsWith('/') || /^https:\/\//i.test(link));
+                const currencyValue = column.currency && value != null
+                  ? new Intl.NumberFormat(undefined, { style: 'currency', currency: row.currency || 'USD' }).format(Number(value))
+                  : value;
                 return <td key={column.key}>
-                  {column.badge
+                  {safeLink
+                    ? <a href={link} target="_blank" rel="noreferrer">{currencyValue || 'Open document'}</a>
+                    : column.badge
                     ? <span className={`status status-${String(value).toLowerCase()}`}>{value}</span>
                     : column.date && value
                       ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value))
-                      : value ?? '—'}
+                      : currencyValue ?? '—'}
                 </td>;
               })}
               <td className="row-actions">
-                {onView && <button className="text-button" onClick={() => onView(row)}>Profile</button>}
+                {onView && <button className="text-button" onClick={() => onView(row)}>{viewLabel}</button>}
                 {canUpdate && <button className="text-button" onClick={() => onEdit(row)} aria-label={`Edit ${resource} ${row.id}`}>Edit</button>}
                 {canReset && <button className="text-button" onClick={() => onReset(row)}>Reset password</button>}
                 {canDelete && (!deleteAllowed || deleteAllowed(row)) && <button className="text-button danger-text" onClick={() => onDelete(row)} aria-label={`${deleteLabel} ${resource} ${row.id}`}>{deleteLabel}</button>}

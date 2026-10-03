@@ -1,11 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
-export default function ProtectedRoute({ permission }) {
+export default function ProtectedRoute({ permission, anyPermission = [] }) {
   const { user, loading, can } = useAuth();
   const location = useLocation();
   if (loading) return <div className="fullscreen-state"><span className="spinner" />Checking your session…</div>;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   if (permission && !can(permission)) return <Navigate to="/forbidden" replace />;
+  if (anyPermission.length && !anyPermission.some(can)) return <Navigate to="/forbidden" replace />;
   return <Outlet />;
 }

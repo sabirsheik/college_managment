@@ -84,6 +84,7 @@ export const resources = {
       department_id: { type: 'integer', required: true },
       program_id: { type: 'integer', nullable: true },
       academic_session_id: { type: 'integer', nullable: true },
+      section_id: { type: 'integer', nullable: true },
       admission_date: { type: 'date', nullable: true },
       semester: { type: 'integer', nullable: true, min: 1, max: 20 },
       status: {
@@ -98,10 +99,11 @@ export const resources = {
       JOIN departments d ON d.id = r.department_id
       LEFT JOIN programs p ON p.id = r.program_id
       LEFT JOIN academic_sessions a ON a.id = r.academic_session_id
+      LEFT JOIN sections sec ON sec.id = r.section_id
     `,
-    labels: 'd.name AS department_name, p.name AS program_name, a.name AS academic_session_name',
+    labels: 'd.name AS department_name, p.name AS program_name, a.name AS academic_session_name, sec.name AS section_name',
     searchFields: ['student_id', 'registration_number', 'first_name', 'last_name', 'email'],
-    filterFields: ['status', 'department_id', 'program_id', 'academic_session_id', 'semester'],
+    filterFields: ['status', 'department_id', 'program_id', 'academic_session_id', 'semester', 'section_id'],
     sortFields: ['student_id', 'registration_number', 'first_name', 'last_name', 'email', 'admission_date', 'status', 'created_at'],
     permission: 'students'
   },

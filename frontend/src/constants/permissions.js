@@ -11,7 +11,31 @@ export const permissions = {
   academicSessionsRead: 'academic-sessions.read',
   programsRead: 'programs.read',
   coursesRead: 'courses.read',
-  enrollmentsRead: 'enrollments.read'
+  enrollmentsRead: 'enrollments.read',
+  attendanceView: 'attendance.view',
+  attendanceManage: 'attendance.manage',
+  examsCreate: 'exams.create',
+  examsManage: 'exams.manage',
+  examsView: 'exams.view',
+  gradesView: 'grades.view',
+  gradesManage: 'grades.manage',
+  feesView: 'fees.view',
+  feesManage: 'fees.manage',
+  paymentsView: 'payments.view',
+  paymentsCreate: 'payments.create',
+  reportsView: 'reports.view',
+  classroomsRead: 'classrooms.read',
+  sectionsRead: 'sections.read',
+  courseAssignmentsRead: 'course-assignments.read',
+  timetableRead: 'timetable.read',
+  documentsView: 'documents.view',
+  documentsManage: 'documents.manage',
+  facultyWorkloadView: 'workload.view',
+  invoicesView: 'invoices.view',
+  enrollmentsCreate: 'enrollments.create',
+  enrollmentsManage: 'enrollments.manage',
+  feeStructuresView: 'fees.view',
+  feeStructuresManage: 'fees.manage'
 };
 
 export function resourcePermission(resource, action) {

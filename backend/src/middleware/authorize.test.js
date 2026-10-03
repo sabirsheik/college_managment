@@ -31,3 +31,15 @@ test('maps resource actions to permission names and rejects unknown resources', 
     id: 1, role: 'SUPER_ADMIN', permissions: []
   }, 'not-a-resource').status, 404);
 });
+
+test('keeps Phase 2 workflow permissions role-specific', () => {
+  assert.equal(invoke(requirePermission('attendance.manage'), {
+    id: 1, role: 'FACULTY', permissions: ['attendance.manage']
+  }), undefined);
+  assert.equal(invoke(requirePermission('attendance.manage'), {
+    id: 2, role: 'STUDENT', permissions: ['attendance.view']
+  }).status, 403);
+  assert.equal(invoke(requirePermission('college-settings.update'), {
+    id: 3, role: 'ACCOUNTANT', permissions: ['fees.manage', 'payments.create']
+  }).status, 403);
+});
