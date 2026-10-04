@@ -24,6 +24,9 @@ import {
   listGradeScale, listGrades, listInvoices, listPayments, listStudentFees, markAttendance,
   publishExam, saveExamResults, updateGradeScale
 } from '../controllers/phaseTwoAcademicController.js';
+import { dataExchangeRouter } from './dataExchangeRoutes.js';
+import { libraryRouter } from './libraryRoutes.js';
+import { phaseThreeRouter } from './phaseThreeRoutes.js';
 
 export const apiRouter = Router();
 
@@ -91,4 +94,7 @@ apiRouter.get('/documents', requirePermission('documents.view'), asyncHandler(li
 apiRouter.post('/documents', requirePermission('documents.manage'), asyncHandler(createDocument));
 apiRouter.get('/faculty-workload', requirePermission('workload.view'), asyncHandler(facultyWorkload));
 apiRouter.get('/reports/:type', requirePermission('reports.view'), asyncHandler(academicReport));
+apiRouter.use('/library', libraryRouter);
+apiRouter.use('/', dataExchangeRouter);
+apiRouter.use('/', phaseThreeRouter);
 apiRouter.use('/', resourceRouter);

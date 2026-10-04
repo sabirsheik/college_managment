@@ -67,3 +67,17 @@ The third migration adds Phase 2 workflow data:
 Phase 2 API mutations write audit events in the same transaction where the
 operation has multi-row or financial effects. Database-backed integration
 tests require a configured PostgreSQL `DATABASE_URL`.
+
+The fourth migration adds library categories, book titles and copies, members,
+circulation loans, fine accrual fields, and librarian permissions. Active-copy
+uniqueness is enforced by a partial index; write operations lock the relevant
+member, copy, or loan row before applying circulation rules.
+
+The fifth migration adds targeted announcement records, resolved recipients,
+and a notification link for each delivery. Recipient rows and their generated
+notifications are committed with publication as a single transaction.
+
+The sixth migration adds single-use password-reset token hashes and database
+triggers that reject audit-log updates, deletes, and truncation. Migrations run
+in independent transactions protected by a PostgreSQL advisory lock; applied
+migrations are forward-only.

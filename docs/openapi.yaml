@@ -1,0 +1,243 @@
+openapi: 3.1.0
+info:
+  title: Campus College Management API
+  version: 1.0.0
+  description: Versioned REST API for role-scoped college operations.
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local development
+security:
+  - sessionCookie: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Service and database health
+      responses:
+        "200":
+          description: API and database are available
+        "503":
+          description: Database is unavailable
+  /auth/login:
+    post:
+      security: []
+      summary: Create an authenticated session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200": { description: Signed in; session cookie is set }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/password-reset/request:
+    post:
+      security: []
+      summary: Request a single-use password reset link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200": { description: Generic response that does not reveal account existence }
+        "429": { $ref: "#/components/responses/Error" }
+  /auth/password-reset/complete:
+    post:
+      security: []
+      summary: Complete a password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, minLength: 12, maxLength: 72 }
+      responses:
+        "200": { description: Password updated and prior sessions invalidated }
+        "400": { $ref: "#/components/responses/Error" }
+  /dashboard:
+    get:
+      summary: Role-specific dashboard data
+      responses:
+        "200": { description: Authenticated role-scoped dashboard }
+        "403": { $ref: "#/components/responses/Error" }
+  /announcements:
+    get:
+      summary: List announcements visible to the authenticated user
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { description: Recipient-scoped announcement collection }
+    post:
+      summary: Create an announcement draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementDraft"
+      responses:
+        "201": { description: Draft created }
+        "403": { $ref: "#/components/responses/Error" }
+  /announcements/{id}/publish:
+    post:
+      summary: Publish a draft and notify its resolved audience
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200": { description: Published announcement and recipient count }
+        "409": { $ref: "#/components/responses/Error" }
+  /search:
+    get:
+      summary: Search authorized student, faculty, academic, and library records
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 100 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200": { description: Caller-authorized search results }
+  /activity/{entityType}/{entityId}:
+    get:
+      summary: Read record activity after record-level authorization
+      parameters:
+        - name: entityType
+          in: path
+          required: true
+          schema: { type: string, enum: [students, faculty, courses, departments, programs, sections, books] }
+        - name: entityId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200": { description: Paginated activity timeline }
+        "404": { $ref: "#/components/responses/Error" }
+  /library/search:
+    get:
+      summary: Search active library catalogue records
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { description: Search results with copy availability counts }
+        "403": { $ref: "#/components/responses/Error" }
+  /imports/{entity}:
+    post:
+      summary: Import validated CSV rows
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema: { type: string, enum: [students, faculty, courses] }
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string, maxLength: 2097152 }
+      responses:
+        "201": { description: All rows imported }
+        "207": { description: Row-level partial import results }
+        "413": { $ref: "#/components/responses/Error" }
+  /exports/{report}:
+    get:
+      summary: Download an authorized CSV report
+      parameters:
+        - name: report
+          in: path
+          required: true
+          schema: { type: string, enum: [students, attendance, exam-results, fees, payments] }
+        - name: academic_session_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: department_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: program_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: semester
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: section_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: CSV attachment, max 50,000 rows
+          content:
+            text/csv:
+              schema: { type: string }
+        "403": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: college_session
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  schemas:
+    AnnouncementDraft:
+      type: object
+      required: [title, message, targetType]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 180 }
+        message: { type: string, minLength: 1, maxLength: 5000 }
+        targetType:
+          type: string
+          enum: [ALL_STUDENTS, ALL_FACULTY, DEPARTMENT, PROGRAM, SECTION, ROLE]
+        targetId: { type: integer, minimum: 1 }
+        targetRole: { type: string, maxLength: 40 }
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, const: false }
+        message: { type: string }
+        errors:
+          type: array
+          items: { type: object }
+  responses:
+    Error:
+      description: Safe API error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

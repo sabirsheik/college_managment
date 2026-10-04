@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from '../layouts/AppLayout.jsx';
 import ProtectedRoute from '../components/ProtectedRoute.jsx';
 import AuditLogPage from '../pages/AuditLogPage.jsx';
-import DashboardPage from '../pages/DashboardPage.jsx';
 import FacultyProfilePage from '../pages/FacultyProfilePage.jsx';
 import ForbiddenPage from '../pages/ForbiddenPage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
@@ -19,17 +18,24 @@ import AttendancePage from '../pages/AttendancePage.jsx';
 import ExamsPage from '../pages/ExamsPage.jsx';
 import GradesPage from '../pages/GradesPage.jsx';
 import AcademicReportsPage from '../pages/AcademicReportsPage.jsx';
+import PortalHome from '../pages/phase3/PortalHome.jsx';
+import LibrarianDashboard from '../pages/phase3/LibrarianDashboard.jsx';
+import AnnouncementsPage from '../pages/phase3/AnnouncementsPage.jsx';
+import GlobalSearchPage from '../pages/phase3/GlobalSearchPage.jsx';
+import DataExchangePage from '../pages/phase3/DataExchangePage.jsx';
+import PasswordResetPage from '../pages/PasswordResetPage.jsx';
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<PasswordResetPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route element={<ProtectedRoute permission={permissions.dashboardRead} />}>
-            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="dashboard" element={<PortalHome />} />
           </Route>
           <Route element={<ProtectedRoute permission={permissions.usersRead} />}>
             <Route path="users" element={<ResourcePage resource="users" />} />
@@ -113,6 +119,18 @@ export default function AppRoutes() {
           </Route>
           <Route element={<ProtectedRoute permission={permissions.auditLogsRead} />}>
             <Route path="audit-logs" element={<AuditLogPage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.libraryBooksRead} />}>
+            <Route path="library" element={<LibrarianDashboard user={null} />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.announcementsRead} />}>
+            <Route path="announcements" element={<AnnouncementsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.searchRead} />}>
+            <Route path="search" element={<GlobalSearchPage />} />
+          </Route>
+          <Route element={<ProtectedRoute permission={permissions.exportsRun} />}>
+            <Route path="data-exchange" element={<DataExchangePage />} />
           </Route>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

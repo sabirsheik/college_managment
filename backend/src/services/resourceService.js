@@ -41,7 +41,7 @@ function ownFields(resource, body) {
 export const listResourceRecords = (name, query) => listRecords(getResource(name), query);
 export const getResourceRecord = (name, id) => getRecord(getResource(name), id);
 
-async function validateRelationships(name, values, id, db = pool) {
+export async function validateResourceRelationships(name, values, id, db = pool) {
   if (name === 'students' || name === 'courses' || name === 'faculty') {
     const current = id
       ? await db.query(`SELECT * FROM ${resources[name].table} WHERE id = $1`, [id])
@@ -129,7 +129,7 @@ export async function createResourceRecord(name, body, req) {
       await assertSessionDates(values, null, client);
       if (values.is_current) await client.query('UPDATE academic_sessions SET is_current = FALSE WHERE is_current');
     }
-    await validateRelationships(name, values, undefined, client);
+    await validateResourceRelationships(name, values, undefined, client);
     const record = await createRecord(resource, values, client);
     await writeAudit(req, 'CREATE', resource.table, record.id, {}, client);
     await client.query('COMMIT');
@@ -162,7 +162,7 @@ export async function updateResourceRecord(name, id, body, req) {
     } else {
       current = await getRecord(resource, id, client);
     }
-    await validateRelationships(name, values, id, client);
+    await validateResourceRelationships(name, values, id, client);
     const record = await updateRecord(resource, id, values, client);
     const action = values.status === 'ACTIVE' ? 'ACTIVATE'
       : values.status === 'INACTIVE' ? 'DEACTIVATE' : 'UPDATE';

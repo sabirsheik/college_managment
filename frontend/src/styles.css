@@ -94,6 +94,7 @@ a { color: inherit; text-decoration: none; }
 .empty-activity { padding: 8px 22px 24px; color: #929cab; font-size: 12px; }
 .dashboard-footer { color: #a0a8b4; font-size: 10px; text-align: center; margin: 25px 0 0; }
 .notice-error, .form-error { color: #a33a3a; background: #fff1f0; border: 1px solid #f7d6d3; border-radius: 7px; padding: 11px 13px; font-size: 12px; margin-bottom: 16px; }
+.notice-success { color: #287450; background: #eef9f3; border: 1px solid #ccebd9; border-radius: 7px; padding: 11px 13px; font-size: 12px; margin-bottom: 16px; }
 .resource-panel { overflow: hidden; }
 .table-toolbar { min-height: 69px; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 19px; border-bottom: 1px solid var(--line); }
 .table-toolbar strong { font-size: 12px; }

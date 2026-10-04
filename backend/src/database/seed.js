@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { pool } from '../config/database.js';
+import { assertStrongPassword } from '../utils/passwordPolicy.js';
 
 const roleNames = ['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'ACCOUNTANT', 'LIBRARIAN'];
 const resourceNames = [
@@ -11,6 +12,7 @@ const permissions = [
   'classrooms.read', 'classrooms.manage', 'sections.read', 'sections.manage',
   'course-assignments.read', 'course-assignments.manage', 'enrollments.manage',
   'timetable.read', 'timetable.manage',
+  'imports.run', 'exports.run',
   'attendance.view', 'attendance.manage', 'exams.view', 'exams.create', 'exams.manage',
   'grades.view', 'grades.manage', 'fees.view', 'fees.manage', 'payments.view',
   'payments.create', 'invoices.view', 'documents.view', 'documents.manage',
@@ -28,7 +30,7 @@ const facultyPermissions = [
   'classrooms.read', 'sections.read', 'course-assignments.read', 'enrollments.read',
   'timetable.read', 'attendance.view', 'attendance.manage', 'exams.view',
   'exams.create', 'exams.manage', 'grades.view', 'grades.manage', 'workload.view',
-  'reports.view'
+  'reports.view', 'exports.run'
 ];
 const studentPermissions = [
   'classrooms.read', 'sections.read', 'course-assignments.read', 'enrollments.read',
@@ -38,8 +40,16 @@ const studentPermissions = [
 ];
 const accountantPermissions = [
   'fees.view', 'fees.manage', 'payments.view', 'payments.create', 'invoices.view',
-  'reports.view'
+  'reports.view', 'exports.run'
 ];
+const libraryPermissions = [
+  'library.categories.read', 'library.categories.create', 'library.categories.update', 'library.categories.delete',
+  'library.books.read', 'library.books.create', 'library.books.update', 'library.books.delete',
+  'library.copies.read', 'library.copies.create', 'library.copies.update', 'library.copies.delete',
+  'library.members.read', 'library.members.create', 'library.members.update', 'library.members.delete',
+  'library.loans.read', 'library.loans.create', 'library.loans.update', 'library.fines.read'
+];
+const librarianPermissions = [...libraryPermissions];
 const demoUsers = [
   ['admin@example.edu', 'Avery', 'Administrator', 'SUPER_ADMIN'],
   ['manager@example.edu', 'Morgan', 'Manager', 'ADMIN'],
@@ -50,9 +60,10 @@ const demoUsers = [
 ];
 
 const password = process.env.SEED_USERS_PASSWORD;
-if (!password || password.length < 12) {
-  throw new Error('Set SEED_USERS_PASSWORD to a development-only password of at least 12 characters.');
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('The development seed must never run in production.');
 }
+assertStrongPassword(password, 'SEED_USERS_PASSWORD');
 
 const client = await pool.connect();
 try {
@@ -72,25 +83,34 @@ try {
   const allPermissions = await client.query('SELECT id, name FROM permissions');
   const roles = await client.query('SELECT id, name FROM roles');
   for (const role of roles.rows) {
-    if (role.name === 'STUDENT' || role.name === 'FACULTY') {
-      await client.query(
-        `DELETE FROM role_permissions rp USING permissions p
-         WHERE rp.permission_id=p.id AND rp.role_id=$1 AND p.name='students.read'`,
-        [role.id]
-      );
-    }
-    const rolePermissions = role.name === 'SUPER_ADMIN' || role.name === 'ADMIN'
+    if (!roleNames.includes(role.name)) continue;
+    const shared = [
+      'dashboard.read', 'notifications.read', 'search.read', 'activity.read', 'announcements.read'
+    ];
+    const roleSpecific = role.name === 'SUPER_ADMIN' || role.name === 'ADMIN'
       ? allPermissions.rows.map((permission) => permission.id)
-      : allPermissions.rows.filter((permission) => {
-        const roleSpecific = role.name === 'FACULTY' ? facultyPermissions
-          : role.name === 'STUDENT' ? studentPermissions
-            : role.name === 'ACCOUNTANT' ? accountantPermissions : [];
-        const shared = role.name === 'STUDENT' ? ['dashboard.read', 'notifications.read']
-          : role.name === 'FACULTY' ? limited.filter((name) => name !== 'students.read')
-            : limited;
-        return shared.includes(permission.name) || roleSpecific.includes(permission.name);
-      }).map((permission) => permission.id);
-    for (const permissionId of rolePermissions) {
+      : role.name === 'FACULTY'
+        ? allPermissions.rows.filter((permission) =>
+          [...shared, ...limited.filter((name) => name !== 'students.read'), ...facultyPermissions].includes(permission.name)
+        ).map((permission) => permission.id)
+        : role.name === 'STUDENT'
+          ? allPermissions.rows.filter((permission) =>
+            [...shared, ...studentPermissions].includes(permission.name)
+          ).map((permission) => permission.id)
+          : role.name === 'ACCOUNTANT'
+            ? allPermissions.rows.filter((permission) =>
+              [...shared, ...accountantPermissions].includes(permission.name)
+            ).map((permission) => permission.id)
+            : role.name === 'LIBRARIAN'
+              ? allPermissions.rows.filter((permission) =>
+                [...shared, ...librarianPermissions].includes(permission.name)
+              ).map((permission) => permission.id)
+              : [];
+    await client.query(
+      'DELETE FROM role_permissions WHERE role_id=$1 AND NOT (permission_id=ANY($2::int[]))',
+      [role.id, roleSpecific]
+    );
+    for (const permissionId of roleSpecific) {
       await client.query(
         `INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2)
          ON CONFLICT DO NOTHING`,
@@ -172,13 +192,6 @@ try {
     ON CONFLICT (code) DO NOTHING
   `);
   await client.query(`
-    INSERT INTO enrollments (student_id, course_id, semester, status)
-    SELECT s.id, c.id, 'Fall 2026', 'enrolled'
-    FROM students s CROSS JOIN courses c
-    WHERE s.registration_number = 'REG-DEMO-001' AND c.course_code = 'CS-101'
-    ON CONFLICT (student_id, course_id, semester) DO NOTHING
-  `);
-  await client.query(`
     INSERT INTO classrooms (building, room_number, capacity, room_type, facilities, status)
     VALUES ('Main Building', '101', 40, 'CLASSROOM', ARRAY['Projector', 'Whiteboard'], 'ACTIVE')
     ON CONFLICT DO NOTHING
@@ -220,6 +233,28 @@ try {
     FROM students s JOIN courses c ON c.course_code='CS-101'
     WHERE e.student_id=s.id AND e.course_id=c.id AND s.registration_number='REG-DEMO-001'
       AND e.academic_session_id IS NULL
+      AND e.id = (
+        SELECT MIN(legacy.id)
+        FROM enrollments legacy
+        WHERE legacy.student_id=s.id AND legacy.course_id=c.id
+          AND legacy.academic_session_id IS NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM enrollments existing
+        WHERE existing.student_id=s.id AND existing.course_id=c.id
+          AND existing.academic_session_id=s.academic_session_id
+          AND existing.semester_number=s.semester
+      )
+  `);
+  await client.query(`
+    INSERT INTO enrollments
+      (student_id, course_id, semester, status, academic_session_id, semester_number, enrollment_date)
+    SELECT s.id, c.id, s.semester::text, 'enrolled', s.academic_session_id, s.semester, '2026-09-01'
+    FROM students s JOIN courses c ON c.course_code='CS-101'
+    WHERE s.registration_number='REG-DEMO-001'
+    ON CONFLICT (student_id, course_id, academic_session_id, semester_number)
+      WHERE academic_session_id IS NOT NULL AND semester_number IS NOT NULL
+      DO NOTHING
   `);
   await client.query(`
     INSERT INTO timetable (course_assignment_id, classroom_id, day_of_week, start_time, end_time)

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function LoginPage() {
@@ -43,6 +43,7 @@ export default function LoginPage() {
           {error && <div className="form-error" role="alert">{error}</div>}
           <button className="button button-primary" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button>
         </form>
+        <Link className="subtle-link" to="/reset-password">Forgot your password?</Link>
         <span className="login-footnote">Your account is protected with secure, HttpOnly session cookies.</span>
       </section>
       <aside className="login-aside">
@@ -55,4 +56,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

@@ -16,6 +16,29 @@ function date(value, options = { month: 'short', day: 'numeric', year: 'numeric'
   return value ? new Intl.DateTimeFormat('en', options).format(new Date(value)) : '—';
 }
 
+function TrendPanel({ title, rows, valueKey, formatter = (value) => value }) {
+  const values = rows || [];
+  const maximum = Math.max(1, ...values.map((row) => Number(row[valueKey]) || 0));
+  return (
+    <section className="panel phase3-chart">
+      <div className="panel-heading"><div><span className="eyebrow">LAST SIX MONTHS</span><h3>{title}</h3></div></div>
+      <div className="phase3-chart-bars" role="img" aria-label={`${title} trend`}>
+        {values.map((row) => {
+          const value = Number(row[valueKey]) || 0;
+          return (
+            <div className="phase3-chart-column" key={row.month}>
+              <span>{formatter(value)}</span>
+              <div className="phase3-chart-track"><i style={{ height: `${Math.max(4, (value / maximum) * 100)}%` }} /></div>
+              <small>{date(row.month, { month: 'short' })}</small>
+            </div>
+          );
+        })}
+        {!values.length && <p className="empty-activity">No monthly activity recorded yet.</p>}
+      </div>
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const { user, can } = useAuth();
   const [data, setData] = useState(null);
@@ -57,6 +80,19 @@ export default function DashboardPage() {
         {data?.currentAcademicSession && <span className="session-dates">{date(data.currentAcademicSession.start_date)} — {date(data.currentAcademicSession.end_date)}</span>}
         {can(permissions.academicSessionsRead) && <Link to="/academic-sessions">Manage sessions <span aria-hidden="true">→</span></Link>}
       </section>
+      {data?.analytics && (
+        <>
+          <div className="phase3-analytics-grid">
+            <div className="panel phase3-kpi"><span className="eyebrow">FEE COLLECTIONS</span><strong>{Number(data.analytics.fees?.collected || 0).toLocaleString()}</strong><small>Collected to date</small></div>
+            <div className="panel phase3-kpi"><span className="eyebrow">OUTSTANDING</span><strong>{Number(data.analytics.fees?.outstanding || 0).toLocaleString()}</strong><small>Remaining student balances</small></div>
+            <div className="panel phase3-kpi"><span className="eyebrow">ATTENDANCE RECORDS</span><strong>{data.analytics.attendanceByStatus.reduce((sum, row) => sum + Number(row.count), 0).toLocaleString()}</strong><small>Recorded attendance entries</small></div>
+          </div>
+          <div className="dashboard-columns">
+            <TrendPanel title="Monthly payments" rows={data.analytics.paymentsByMonth} valueKey="amount" formatter={(value) => Number(value).toLocaleString()} />
+            <TrendPanel title="New student records" rows={data.analytics.enrollmentsByMonth} valueKey="count" formatter={(value) => value.toLocaleString()} />
+          </div>
+        </>
+      )}
       <div className="dashboard-columns">
         <section className="panel dashboard-panel">
           <div className="panel-heading"><div><span className="eyebrow">RECENTLY ADMITTED</span><h3>Recent students</h3></div>{can('students.read') && <Link className="subtle-link" to="/students">View all →</Link>}</div>

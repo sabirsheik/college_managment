@@ -42,5 +42,24 @@ export const api = {
   gpa: (studentId = 'me', params = {}) => request(`/gpa/${studentId}${queryString(params)}`),
   reports: (type, params = {}) => request(`/reports/${type}${queryString(params)}`),
   createFeeStructure: (data) => request('/fees/structures', { method: 'POST', body: JSON.stringify(data) }),
-  createGradeScale: (data) => request('/grades/scale', { method: 'POST', body: JSON.stringify(data) })
+  createGradeScale: (data) => request('/grades/scale', { method: 'POST', body: JSON.stringify(data) }),
+  importCsv: (entity, csv) => request(`/imports/${entity}`, {
+    method: 'POST', body: csv, headers: { 'Content-Type': 'text/csv' }
+  }),
+  exportCsv: async (report, params = {}) => {
+    let response;
+    try {
+      response = await fetch(`${baseUrl}/exports/${report}${queryString(params)}`, { credentials: 'include' });
+    } catch (cause) {
+      const error = new Error('Unable to reach the API. Check that the backend is running.');
+      error.cause = cause;
+      throw error;
+    }
+    if (!response.ok) {
+      let payload;
+      try { payload = await response.json(); } catch { payload = null; }
+      throw new Error(payload?.message || `Export failed (${response.status}).`);
+    }
+    return response.blob();
+  }
 };

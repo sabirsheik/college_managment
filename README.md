@@ -1,7 +1,7 @@
 # Campus College Management
 
-College management platform with a secure Phase 1 foundation and Phase 2
-academic and operational workflows. The application includes session
+College management platform with secure Phase 1 and Phase 2 foundations plus
+Phase 3 operational workflows. The application includes session
 authentication, database-backed RBAC, academic records and schedules,
 attendance, exams and grades, GPA, student finances, documents, reports,
 notifications, audit events, and a responsive administrative workspace.
@@ -16,39 +16,36 @@ notifications, audit events, and a responsive administrative workspace.
 ## Local setup
 
 1. Install Node.js 20+ and PostgreSQL. Create the `college_management` database.
-2. Copy `backend/.env.example` to `backend/.env`.
-3. Set `DATABASE_URL` in that ignored local file to the connection string for
-   your PostgreSQL instance. Do not put database credentials in source files.
-4. Generate a private JWT secret (for example,
-   `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
-   and set `JWT_SECRET`. Set `SEED_USERS_PASSWORD` to a private development
-   password of at least 12 characters; it is shared by the fake seed accounts.
-5. Install dependencies, migrate/seed, then start the backend and frontend.
+2. Install the backend and frontend dependencies once:
 
 ```powershell
-cd backend
-npm install
-npm run db:migrate
-npm run db:seed
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+3. Start both apps and prepare the local database with one command, from the
+   project root or from `backend/`:
+
+```powershell
 npm run dev
 ```
 
-In a second terminal:
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+If `DATABASE_URL` is missing or still has the sample placeholder, enter the
+local PostgreSQL connection URL when prompted. The launcher saves it and
+generated development-only auth/seed values in the Git-ignored root `.env`,
+applies migrations, seeds demo roles/accounts, and starts both the API and
+frontend. An existing value in `.env` is loaded automatically. Later starts
+need only `npm run dev`. The launcher refuses production mode and non-local
+databases to avoid seeding a remote/production database. For a custom existing
+configuration, set values in `backend/.env` or root `.env` before starting.
 
 The frontend is at <http://localhost:5173>, the API at
 <http://localhost:5000>, and the health check (including PostgreSQL connectivity) at
-<http://localhost:5000/api/v1/health>. The backend reads environment values
-from `backend/.env`. The frontend defaults to this local API; set
+<http://localhost:5000/api/v1/health>. The frontend defaults to this local API; set
 `VITE_API_URL` to override its base URL.
 
-Development seed accounts (all use the `SEED_USERS_PASSWORD` value from your
-local environment):
+Development seed accounts (all use the generated `SEED_USERS_PASSWORD` value
+stored in your ignored `.env`):
 
 - `admin@example.edu` — `SUPER_ADMIN`
 - `manager@example.edu` — `ADMIN`
@@ -91,6 +88,22 @@ the Phase 2 API. Existing MVP enrollment rows are retained; only newly created
 Phase 2 enrollments include the academic session and numeric semester used for
 duplicate prevention and reporting.
 
+## Phase 3 operations
+
+- Dedicated student, faculty, accountant, and librarian portals, with a scoped
+  administrator dashboard, financial/attendance summaries, and monthly trends
+- Search across role-authorized records, targeted announcements, and library
+  catalogue/circulation management
+- Validated CSV exchange, password recovery through a configured mail gateway,
+  request IDs, structured logging, rate limits, and stricter production config
+- Additive migrations serialize through a PostgreSQL advisory lock. Apply
+  migrations in the deployment pipeline before starting API instances.
+
+For the security model, OpenAPI contract, supported configuration, deployment,
+backup, recovery, and incident procedures, see [operations](docs/OPERATIONS.md),
+[OpenAPI](docs/openapi.yaml), [API](docs/API.md), [database](docs/DATABASE.md),
+and [architecture](docs/ARCHITECTURE.md).
+
 ## Tests and builds
 
 ```powershell
@@ -102,9 +115,5 @@ npm run build
 
 Database integration requires a running PostgreSQL server and configured
 `DATABASE_URL`. Authentication is enabled by default; there is no public CRUD
-mode. Before production use, configure TLS/secure cookies, backups, deployment
-secrets, email delivery, operational monitoring, and a reviewed permission
-matrix.
-
-Further documentation: [API](docs/API.md), [database](docs/DATABASE.md), and
-[architecture](docs/ARCHITECTURE.md).
+mode. Database-backed workflows cannot be verified without a configured
+PostgreSQL test database.

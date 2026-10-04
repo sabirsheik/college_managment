@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { pool } from '../config/database.js';
 import { writeAudit } from '../utils/audit.js';
 import { HttpError } from '../utils/httpError.js';
+import { assertStrongPassword } from '../utils/passwordPolicy.js';
 
 const userColumns = `u.id, u.email, u.first_name, u.last_name, u.phone, u.is_active,
   u.last_login_at, u.created_at, u.updated_at, r.name AS role`;
@@ -129,9 +130,7 @@ export async function createUser(req, res) {
   if (fields.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
     throw new HttpError(403, 'Only a SUPER_ADMIN can create another SUPER_ADMIN.');
   }
-  if (typeof password !== 'string' || password.length < 12) {
-    throw new HttpError(400, 'password must be at least 12 characters.');
-  }
+  assertStrongPassword(password);
   const hash = await bcrypt.hash(password, 12);
   const client = await pool.connect();
   let result;
@@ -265,9 +264,7 @@ export async function resetPassword(req, res) {
     throw new HttpError(403, 'Only a SUPER_ADMIN can reset a SUPER_ADMIN password.');
   }
   const password = req.body?.password;
-  if (typeof password !== 'string' || password.length < 12) {
-    throw new HttpError(400, 'password must be at least 12 characters.');
-  }
+  assertStrongPassword(password);
   const hash = await bcrypt.hash(password, 12);
   const client = await pool.connect();
   try {

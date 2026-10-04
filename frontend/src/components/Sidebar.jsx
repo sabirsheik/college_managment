@@ -15,6 +15,10 @@ export default function Sidebar() {
       permissions: item.navigationPermissions
     })),
     { to: '/settings', label: 'College settings', icon: 'CS', permission: permissions.collegeSettingsRead },
+    { to: '/library', label: 'Library', icon: 'LB', permission: permissions.libraryBooksRead },
+    { to: '/announcements', label: 'Announcements', icon: 'AN', permission: permissions.announcementsRead },
+    { to: '/search', label: 'Search', icon: 'SR', permission: permissions.searchRead },
+    { to: '/data-exchange', label: 'Data exchange', icon: 'DX', permissions: [permissions.importsRun, permissions.exportsRun] },
     { to: '/notifications', label: 'Notifications', icon: 'NT', permission: permissions.notificationsRead },
     { to: '/audit-logs', label: 'Audit log', icon: 'AL', permission: permissions.auditLogsRead }
   ].filter((link) => link.permissions ? link.permissions.some(can) : can(link.permission));

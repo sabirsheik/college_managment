@@ -35,7 +35,15 @@ export const permissions = {
   enrollmentsCreate: 'enrollments.create',
   enrollmentsManage: 'enrollments.manage',
   feeStructuresView: 'fees.view',
-  feeStructuresManage: 'fees.manage'
+  feeStructuresManage: 'fees.manage',
+  announcementsRead: 'announcements.read',
+  announcementsCreate: 'announcements.create',
+  announcementsPublish: 'announcements.publish',
+  searchRead: 'search.read',
+  activityRead: 'activity.read',
+  libraryBooksRead: 'library.books.read',
+  importsRun: 'imports.run',
+  exportsRun: 'exports.run'
 };
 
 export function resourcePermission(resource, action) {

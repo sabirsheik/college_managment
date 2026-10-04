@@ -26,6 +26,8 @@ details and stacks are not returned to clients.
 - `POST /auth/logout`
 - `GET /auth/me`
 - `POST /auth/change-password` — `{ "currentPassword": "...", "newPassword": "..." }`
+- `POST /auth/password-reset/request` — `{ "email": "..." }`, always returns a generic response
+- `POST /auth/password-reset/complete` — `{ "token": "...", "newPassword": "..." }`
 
 Sign-in attempts are rate-limited. JWTs are held only in an HTTP-only,
 SameSite=Lax cookie. `COOKIE_SECURE=true` enables the Secure cookie flag.
@@ -129,3 +131,25 @@ permission. Their Phase 2 records are accessed through server-scoped workflows.
 
 `DELETE /users/:id` deactivates the account. The service prevents deactivating
 or reassigning the final active `SUPER_ADMIN`.
+
+## Phase 3 operations
+
+| Path | Methods | Permission / scope |
+| --- | --- | --- |
+| `/library/categories`, `/library/books`, `/library/copies`, `/library/members` | `GET`, `POST`, `GET /:id`, `PATCH /:id`, `DELETE /:id` | Matching `library.<resource>.<action>` permissions |
+| `/library/search`, `/library/availability` | `GET` | `library.books.read` |
+| `/library/loans` | `GET`, `POST`; `POST /:id/return`, `POST /:id/renew` | `library.loans.read/create/update` |
+| `/library/fines`, `/library/fines/overdue` | `GET` | `library.fines.read` |
+| `/announcements` | `GET`, `POST`; `GET /:id`; `POST /:id/publish` | `announcements.read/create/publish`; recipient-scoped reads |
+| `/search?q=...&limit=...` | `GET` | `search.read`; records are independently filtered to the caller's role |
+| `/activity/:entityType/:entityId` | `GET` | `activity.read` plus record-level authorization |
+| `/imports/:entity` | `POST` (`text/csv`) | `imports.run`; entity is students, faculty, or courses |
+| `/exports/:report` | `GET` | `exports.run`; report is students, attendance, exam-results, fees, or payments |
+
+Password reset links expire after 30 minutes, are single-use, and persist only a
+SHA-256 token hash. Configure `EMAIL_API_URL` and `EMAIL_API_KEY` together; the
+mail gateway receives `{ "to", "subject", "text" }` as JSON. If delivery is not
+configured or fails, reset requests remain generic and the token is invalidated.
+CSV imports are capped at 2 MB and 1,000 rows, process rows with savepoints, and
+return row-level errors. CSV exports are capped at 50,000 rows and neutralize
+spreadsheet formula cells.
