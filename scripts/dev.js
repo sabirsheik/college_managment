@@ -164,7 +164,7 @@ try {
   await prepareEnvironment();
   console.log('Applying database migrations...');
   await run(node, ['src/database/migrate.js'], backend);
-  console.log('Preparing development roles and demo accounts...');
+  console.log('Preparing development roles and administrator account...');
   await run(node, ['src/database/seed.js'], backend);
   await startServers();
 } catch (error) {
