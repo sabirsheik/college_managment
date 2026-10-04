@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { permissions, resourcePermission } from '../constants/permissions.js';
@@ -44,39 +44,74 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const visibleCards = cards.filter((card) => can(resourcePermission(card.key, 'read')));
 
-  useEffect(() => {
-    api.dashboard()
-      .then((response) => setData(response.data))
-      .catch((cause) => setError(cause.message))
-      .finally(() => setLoading(false));
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const response = await api.dashboard();
+      setData(response.data);
+      setLastUpdated(new Date());
+      setError('');
+    } catch (cause) {
+      setError(cause.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
+  useEffect(() => {
+    void refresh();
+    const interval = window.setInterval(() => { void refresh(); }, 30_000);
+    return () => window.clearInterval(interval);
+  }, [refresh]);
+
   return (
-    <div className="page-content">
+    <div className="page-content dashboard-page" aria-busy={loading || refreshing}>
       <div className="welcome-row">
         <div>
           <span className="eyebrow">INSTITUTION OVERVIEW</span>
           <h2>Welcome back, {user?.first_name}</h2>
-          <p>A live view of your college’s academic operations.</p>
+          <p>Current academic activity and institution-wide records.</p>
         </div>
-        {can(resourcePermission('students', 'create')) && <Link className="button button-primary" to="/students">＋ Add a student</Link>}
+        <div className="heading-actions">
+          <span className="dashboard-refresh-info" role="status">
+            {lastUpdated ? `Updated ${date(lastUpdated, { hour: 'numeric', minute: '2-digit' })}` : 'Loading live data'}
+          </span>
+          <button className="button button-secondary" type="button" onClick={() => void refresh()} disabled={refreshing}>
+            {refreshing ? 'Refreshing…' : 'Refresh data'}
+          </button>
+          {can(resourcePermission('students', 'create')) && <Link className="button button-primary" to="/students">Add a student</Link>}
+        </div>
       </div>
-      {error && <div className="notice-error" role="alert">{error}</div>}
+      {error && (
+        <div className="notice-error" role="alert">
+          {lastUpdated
+            ? `Could not refresh dashboard data. Showing the last successful update. ${error}`
+            : `Dashboard data could not be loaded. Check the API connection and try again. ${error}`}
+        </div>
+      )}
       <div className="stat-grid">
-        {visibleCards.map((card) => (
-          <Link key={card.key} className="stat-card" to={card.link}>
-            <div className={`stat-icon ${card.color}`}>{card.icon}</div>
-            <div className="stat-label">{card.label}</div>
-            <div className="stat-value">{loading ? '—' : data?.totals[card.key]?.toLocaleString() ?? '0'}</div>
-            <span className="stat-link">View records <span aria-hidden="true">↗</span></span>
-          </Link>
-        ))}
+        {visibleCards.map((card) => {
+          const total = data?.totals?.[card.key];
+          return (
+            <Link key={card.key} className="stat-card" to={card.link}>
+              <div className={`stat-icon ${card.color}`}>{card.icon}</div>
+              <div className="stat-label">{card.label}</div>
+              <div className="stat-value">
+                {loading || (error && !data) || total == null ? '—' : total.toLocaleString()}
+              </div>
+              <span className="stat-link">View records <span aria-hidden="true">↗</span></span>
+            </Link>
+          );
+        })}
       </div>
       <section className="session-banner">
         <span className="session-mark">AY</span>
-        <div><span className="eyebrow">CURRENT ACADEMIC SESSION</span><strong>{data?.currentAcademicSession?.name || (loading ? 'Loading…' : 'Not set')}</strong></div>
+        <div><span className="eyebrow">CURRENT ACADEMIC SESSION</span><strong>{data?.currentAcademicSession?.name || (loading ? 'Loading…' : 'No active session')}</strong></div>
         {data?.currentAcademicSession && <span className="session-dates">{date(data.currentAcademicSession.start_date)} — {date(data.currentAcademicSession.end_date)}</span>}
         {can(permissions.academicSessionsRead) && <Link to="/academic-sessions">Manage sessions <span aria-hidden="true">→</span></Link>}
       </section>
