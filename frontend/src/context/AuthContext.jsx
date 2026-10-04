@@ -2,6 +2,16 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
 
 const AuthContext = createContext(null);
+let sessionLookup;
+
+function getSession() {
+  if (!sessionLookup) {
+    sessionLookup = api.me().finally(() => {
+      sessionLookup = null;
+    });
+  }
+  return sessionLookup;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -9,7 +19,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    api.me()
+    getSession()
       .then((response) => { if (active) setUser(response.data.user); })
       .catch((error) => {
         if (active && error.status !== 401) console.error('Session lookup failed:', error.message);
