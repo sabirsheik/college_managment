@@ -17,6 +17,9 @@ export default function PortalHome() {
   const { user, loading } = useAuth();
   if (loading) return <div className="page-content p3-dashboard"><p className="p3-state" role="status">Loading your portal…</p></div>;
   const Dashboard = dashboards[user?.role];
+  if (Dashboard) return <Dashboard user={user} />;
+  if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') return <DashboardPage />;
+
   if (!Dashboard) {
     return (
       <div className="page-content p3-dashboard">
@@ -27,5 +30,4 @@ export default function PortalHome() {
       </div>
     );
   }
-  return Dashboard ? <Dashboard user={user} /> : <DashboardPage />;
 }
