@@ -4,8 +4,10 @@ Create the local database `college_management`, set `DATABASE_URL` in the
 ignored `backend/.env`, then run `npm run db:migrate` from `backend/`. Migrations
 are ordered SQL files under `database/migrations`; applied migration names are
 recorded in `schema_migrations`. `npm run db:seed` loads development roles,
-permissions, sample accounts, and fictional academic data. Seeding requires
-`SEED_USERS_PASSWORD` in the environment and never embeds a password.
+permissions, and a local administrator bootstrap account; it does not create
+fictional institutional or academic records. Seeding requires
+`SEED_USERS_PASSWORD` in the environment and never embeds a password. Existing
+database records are not removed.
 
 ## Tables and relationships
 
