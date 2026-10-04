@@ -37,6 +37,12 @@ export default function LoginPage() {
         <span className="eyebrow">SECURE ADMIN PORTAL</span>
         <h1>Welcome back</h1>
         <p className="login-subtitle">Sign in with your college account to continue.</p>
+        {import.meta.env.DEV && (
+          <p className="login-help">
+            Local development only: registration is disabled. Use <code>admin@example.edu</code> and the
+            <code> SEED_USERS_PASSWORD</code> value from the project-root <code>.env</code> file.
+          </p>
+        )}
         <form className="login-form" onSubmit={submit}>
           <label>Email address<input type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
           <label>Password<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
