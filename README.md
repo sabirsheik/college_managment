@@ -33,8 +33,9 @@ npm run dev
 If `DATABASE_URL` is missing or still has the sample placeholder, enter the
 local PostgreSQL connection URL when prompted. The launcher saves it and
 generated development-only auth/seed values in the Git-ignored root `.env`,
-applies migrations, seeds demo roles/accounts, and starts both the API and
-frontend. An existing value in `.env` is loaded automatically. Later starts
+applies migrations, prepares roles and a local administrator account, and starts
+both the API and frontend. It does not seed fictional institutional or academic
+records. An existing value in `.env` is loaded automatically. Later starts
 need only `npm run dev`. The launcher refuses production mode and non-local
 databases to avoid seeding a remote/production database. For a custom existing
 configuration, set values in `backend/.env` or root `.env` before starting.
@@ -44,18 +45,19 @@ The frontend is at <http://localhost:5173>, the API at
 <http://localhost:5000/api/v1/health>. The frontend defaults to this local API; set
 `VITE_API_URL` to override its base URL.
 
-Development seed accounts (all use the generated `SEED_USERS_PASSWORD` value
-stored in your ignored `.env`):
+The local administrator bootstrap account uses the generated
+`SEED_USERS_PASSWORD` value stored in your ignored `.env`:
 
 - `admin@example.edu` — `SUPER_ADMIN`
-- `manager@example.edu` — `ADMIN`
-- `faculty@example.edu` — `FACULTY`
-- `student@example.edu` — `STUDENT`
-- `accounts@example.edu` — `ACCOUNTANT`
-- `library@example.edu` — `LIBRARIAN`
 
-Seed identities and academic records are fictitious. Never reuse development
-credentials or seed data in production.
+There is no public registration page. To view the local development password
+in PowerShell, run `Get-Content .env | Select-String '^SEED_USERS_PASSWORD='`
+from the project root. Starting the app with `npm run dev` creates the
+administrator account if it does not already exist.
+
+Existing database records are preserved; the development seeder does not remove
+records created by earlier runs. Never reuse development credentials in
+production.
 
 ## Phase 1 modules
 
