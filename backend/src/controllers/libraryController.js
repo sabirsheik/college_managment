@@ -271,7 +271,7 @@ export async function listEntity(entity, req, res) {
       COUNT(DISTINCT cp.id) FILTER (WHERE cp.status = 'AVAILABLE' AND ll.id IS NULL)::int AS available_copies
       ${from} ${query.where} GROUP BY b.id, lc.name ORDER BY b.title, b.id`,
     copies: `SELECT c.id, c.book_id, b.title AS book_title, c.barcode, c.status, c.shelf_location,
-      c.created_at, c.updated_at FROM ${from} ${query.where} ORDER BY c.barcode, c.id`,
+      c.created_at, c.updated_at ${from} ${query.where} ORDER BY c.barcode, c.id`,
     members: `SELECT m.id, m.user_id, m.member_code, m.full_name, m.email, m.phone,
       m.max_active_loans, m.is_active, m.created_at, m.updated_at FROM ${from} ${query.where} ORDER BY m.full_name, m.id`
   }[entity];
