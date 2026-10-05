@@ -71,20 +71,24 @@ export default function DashboardPage() {
 
   return (
     <div className="page-content dashboard-page" aria-busy={loading || refreshing}>
-      <div className="welcome-row">
-        <div>
+      <div className="dashboard-hero">
+        <div className="dashboard-hero-copy">
           <span className="eyebrow">INSTITUTION OVERVIEW</span>
-          <h2>Welcome back, {user?.first_name}</h2>
-          <p>Current academic activity and institution-wide records.</p>
+          <h2>Welcome back, {user?.first_name || 'there'}</h2>
+          <p>Here’s what’s happening across your campus today.</p>
+          <span className="dashboard-today">{date(new Date(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
         </div>
-        <div className="heading-actions">
+        <div className="dashboard-hero-actions">
           <span className="dashboard-refresh-info" role="status">
-            {lastUpdated ? `Updated ${date(lastUpdated, { hour: 'numeric', minute: '2-digit' })}` : 'Loading live data'}
+            <span className={`dashboard-live-dot${refreshing ? ' is-refreshing' : ''}`} />
+            {lastUpdated ? `Last updated ${date(lastUpdated, { hour: 'numeric', minute: '2-digit' })}` : 'Connecting to live data'}
           </span>
-          <button className="button button-secondary" type="button" onClick={() => void refresh()} disabled={refreshing}>
-            {refreshing ? 'Refreshing…' : 'Refresh data'}
-          </button>
-          {can(resourcePermission('students', 'create')) && <Link className="button button-primary" to="/students">Add a student</Link>}
+          <div className="heading-actions">
+            <button className="button button-secondary" type="button" onClick={() => void refresh()} disabled={refreshing}>
+              {refreshing ? 'Refreshing…' : 'Refresh data'}
+            </button>
+            {can(resourcePermission('students', 'create')) && <Link className="button button-primary" to="/students">Add a student</Link>}
+          </div>
         </div>
       </div>
       {error && (
@@ -94,33 +98,46 @@ export default function DashboardPage() {
             : `Dashboard data could not be loaded. Check the API connection and try again. ${error}`}
         </div>
       )}
-      <div className="stat-grid">
-        {visibleCards.map((card) => {
-          const total = data?.totals?.[card.key];
-          return (
-            <Link key={card.key} className="stat-card" to={card.link}>
-              <div className={`stat-icon ${card.color}`}>{card.icon}</div>
-              <div className="stat-label">{card.label}</div>
-              <div className="stat-value">
-                {loading || (error && !data) || total == null ? '—' : total.toLocaleString()}
-              </div>
-              <span className="stat-link">View records <span aria-hidden="true">↗</span></span>
-            </Link>
-          );
-        })}
-      </div>
-      <section className="session-banner">
+      <section className="dashboard-section" aria-labelledby="dashboard-records-title">
+        <div className="dashboard-section-heading">
+          <div><span className="eyebrow">AT A GLANCE</span><h3 id="dashboard-records-title">Institutional overview</h3></div>
+          <span className="dashboard-section-note">Live record totals</span>
+        </div>
+        <div className="stat-grid">
+          {visibleCards.map((card) => {
+            const total = data?.totals?.[card.key];
+            return (
+              <Link key={card.key} className="stat-card" to={card.link}>
+                <div className={`stat-icon ${card.color}`}>{card.icon}</div>
+                <div className="stat-label">{card.label}</div>
+                <div className="stat-value">
+                  {loading || (error && !data) || total == null ? '—' : total.toLocaleString()}
+                </div>
+                <span className="stat-link">View records <span aria-hidden="true">↗</span></span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+      <section className="session-banner" aria-label="Current academic session">
         <span className="session-mark">AY</span>
-        <div><span className="eyebrow">CURRENT ACADEMIC SESSION</span><strong>{data?.currentAcademicSession?.name || (loading ? 'Loading…' : 'No active session')}</strong></div>
+        <div className="session-copy"><span className="eyebrow">CURRENT ACADEMIC SESSION</span><strong>{data?.currentAcademicSession?.name || (loading ? 'Loading…' : 'No active session')}</strong></div>
         {data?.currentAcademicSession && <span className="session-dates">{date(data.currentAcademicSession.start_date)} — {date(data.currentAcademicSession.end_date)}</span>}
         {can(permissions.academicSessionsRead) && <Link to="/academic-sessions">Manage sessions <span aria-hidden="true">→</span></Link>}
       </section>
       {data?.analytics && (
         <>
+          <div className="dashboard-section-heading dashboard-analytics-heading">
+            <div><span className="eyebrow">CAMPUS PERFORMANCE</span><h3>Financial &amp; attendance summary</h3></div>
+            <span className="dashboard-section-note">Across your institution</span>
+          </div>
           <div className="phase3-analytics-grid">
-            <div className="panel phase3-kpi"><span className="eyebrow">FEE COLLECTIONS</span><strong>{Number(data.analytics.fees?.collected || 0).toLocaleString()}</strong><small>Collected to date</small></div>
-            <div className="panel phase3-kpi"><span className="eyebrow">OUTSTANDING</span><strong>{Number(data.analytics.fees?.outstanding || 0).toLocaleString()}</strong><small>Remaining student balances</small></div>
-            <div className="panel phase3-kpi"><span className="eyebrow">ATTENDANCE RECORDS</span><strong>{data.analytics.attendanceByStatus.reduce((sum, row) => sum + Number(row.count), 0).toLocaleString()}</strong><small>Recorded attendance entries</small></div>
+            <div className="panel phase3-kpi dashboard-kpi-collected"><span className="eyebrow">FEE COLLECTIONS</span><strong>{Number(data.analytics.fees?.collected || 0).toLocaleString()}</strong><small>Collected to date</small></div>
+            <div className="panel phase3-kpi dashboard-kpi-outstanding"><span className="eyebrow">OUTSTANDING</span><strong>{Number(data.analytics.fees?.outstanding || 0).toLocaleString()}</strong><small>Remaining student balances</small></div>
+            <div className="panel phase3-kpi dashboard-kpi-attendance"><span className="eyebrow">ATTENDANCE RECORDS</span><strong>{data.analytics.attendanceByStatus.reduce((sum, row) => sum + Number(row.count), 0).toLocaleString()}</strong><small>Recorded attendance entries</small></div>
+          </div>
+          <div className="dashboard-section-heading dashboard-trends-heading">
+            <div><span className="eyebrow">SIX-MONTH TRENDS</span><h3>Activity over time</h3></div>
           </div>
           <div className="dashboard-columns">
             <TrendPanel title="Monthly payments" rows={data.analytics.paymentsByMonth} valueKey="amount" formatter={(value) => Number(value).toLocaleString()} />
@@ -128,6 +145,9 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+      <div className="dashboard-section-heading dashboard-activity-heading">
+        <div><span className="eyebrow">CAMPUS COMMUNITY</span><h3>People &amp; activity</h3></div>
+      </div>
       <div className="dashboard-columns">
         <section className="panel dashboard-panel">
           <div className="panel-heading"><div><span className="eyebrow">RECENTLY ADMITTED</span><h3>Recent students</h3></div>{can('students.read') && <Link className="subtle-link" to="/students">View all →</Link>}</div>
