@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { permissions, resourcePermission } from '../constants/permissions.js';
 import { api } from '../services/api.js';
+import Icon from '../components/Icon.jsx';
 
 const cards = [
-  { key: 'students', label: 'Active students', icon: 'ST', color: 'blue', link: '/students' },
-  { key: 'faculty', label: 'Faculty members', icon: 'FC', color: 'violet', link: '/faculty' },
-  { key: 'departments', label: 'Departments', icon: 'DP', color: 'amber', link: '/departments' },
-  { key: 'programs', label: 'Academic programs', icon: 'PG', color: 'green', link: '/programs' },
-  { key: 'courses', label: 'Courses offered', icon: 'CR', color: 'blue', link: '/courses' }
+  { key: 'students', label: 'Active students', icon: 'graduation', color: 'blue', link: '/students' },
+  { key: 'faculty', label: 'Faculty members', icon: 'briefcase', color: 'violet', link: '/faculty' },
+  { key: 'departments', label: 'Departments', icon: 'building', color: 'amber', link: '/departments' },
+  { key: 'programs', label: 'Academic programs', icon: 'bookOpen', color: 'green', link: '/programs' },
+  { key: 'courses', label: 'Courses offered', icon: 'book', color: 'blue', link: '/courses' }
 ];
 
 function date(value, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
@@ -108,7 +109,7 @@ export default function DashboardPage() {
             const total = data?.totals?.[card.key];
             return (
               <Link key={card.key} className="stat-card" to={card.link}>
-                <div className={`stat-icon ${card.color}`}>{card.icon}</div>
+                <div className={`stat-icon ${card.color}`}><Icon name={card.icon} size={21} /></div>
                 <div className="stat-label">{card.label}</div>
                 <div className="stat-value">
                   {loading || (error && !data) || total == null ? '—' : total.toLocaleString()}
@@ -120,7 +121,7 @@ export default function DashboardPage() {
         </div>
       </section>
       <section className="session-banner" aria-label="Current academic session">
-        <span className="session-mark">AY</span>
+        <span className="session-mark"><Icon name="calendar" size={21} /></span>
         <div className="session-copy"><span className="eyebrow">CURRENT ACADEMIC SESSION</span><strong>{data?.currentAcademicSession?.name || (loading ? 'Loading…' : 'No active session')}</strong></div>
         {data?.currentAcademicSession && <span className="session-dates">{date(data.currentAcademicSession.start_date)} — {date(data.currentAcademicSession.end_date)}</span>}
         {can(permissions.academicSessionsRead) && <Link to="/academic-sessions">Manage sessions <span aria-hidden="true">→</span></Link>}
