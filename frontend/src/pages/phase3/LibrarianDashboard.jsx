@@ -5,7 +5,7 @@ import { DashboardHeading, DataPanel, EmptyState, RecordTable, rowsOf, shortDate
 import './phase3.css';
 
 export default function LibrarianDashboard({ user: suppliedUser }) {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, can } = useAuth();
   const user = suppliedUser || currentUser;
   const [query, setQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
