@@ -3,6 +3,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { permissions } from '../constants/permissions.js';
 import { api } from '../services/api.js';
+import Icon from '../components/Icon.jsx';
 
 const fields = [
   ['college_name', 'College name', true],
@@ -55,7 +56,7 @@ export default function SettingsPage() {
     <div className="page-content">
       <div className="resource-heading"><div><span className="eyebrow">INSTITUTION PROFILE</span><h2>College settings</h2><p>Manage the institutional information used across Campus.</p></div></div>
       <form className="panel settings-panel" onSubmit={submit}>
-        <div className="settings-section-heading"><span className="settings-icon">CL</span><div><h3>College identity</h3><p>Contact and academic details for your institution.</p></div></div>
+        <div className="settings-section-heading"><span className="settings-icon"><Icon name="building" size={20} /></span><div><h3>College identity</h3><p>Contact and academic details for your institution.</p></div></div>
         {loading ? <div className="loading-state"><span className="spinner" />Loading settings…</div> : <>
           {error && <div className="notice-error" role="alert">{error}</div>}
           <div className="form-grid settings-grid">
