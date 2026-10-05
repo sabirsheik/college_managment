@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { request } from '../api/client.js';
+import Icon from '../components/Icon.jsx';
 
 export default function PasswordResetPage() {
   const [searchParams] = useSearchParams();
@@ -48,7 +49,7 @@ export default function PasswordResetPage() {
   return (
     <main className="login-page">
       <section className="login-panel">
-        <div className="login-brand"><span className="brand-mark">C</span><span><strong>Campus</strong><small>COLLEGE MANAGEMENT</small></span></div>
+        <div className="login-brand"><span className="brand-mark"><Icon name="graduation" size={22} /></span><span><strong>Campus</strong><small>COLLEGE MANAGEMENT</small></span></div>
         <span className="eyebrow">ACCOUNT SECURITY</span>
         <h1>{token ? 'Choose a new password' : 'Reset your password'}</h1>
         <p className="login-subtitle">
