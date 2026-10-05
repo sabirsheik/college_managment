@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { resourceConfig } from '../constants/resources.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import Icon from './Icon.jsx';
 
 export default function Topbar() {
   const { pathname } = useLocation();
@@ -45,7 +46,7 @@ export default function Topbar() {
           weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
         }).format(new Date())}</span>
         <Link className="avatar top-avatar" to="/profile" aria-label="Open profile">{user?.first_name?.[0]}{user?.last_name?.[0]}</Link>
-        <button className="signout-button" disabled={signingOut} onClick={signOut}>{signingOut ? 'Signing out…' : 'Sign out'}</button>
+        <button className="signout-button" disabled={signingOut} onClick={signOut}><Icon name="logout" size={17} />{signingOut ? 'Signing out…' : 'Sign out'}</button>
       </div>
     </header>
   );
