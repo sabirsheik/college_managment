@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import Icon from '../components/Icon.jsx';
 
 export default function LoginPage() {
   const { user, loading, login } = useAuth();
@@ -31,7 +32,7 @@ export default function LoginPage() {
     <main className="login-page">
       <section className="login-panel">
         <div className="login-brand">
-          <span className="brand-mark">C</span>
+          <span className="brand-mark"><Icon name="graduation" size={22} /></span>
           <span><strong>Campus</strong><small>COLLEGE ADMINISTRATION</small></span>
         </div>
         <span className="eyebrow">SECURE ADMIN PORTAL</span>
@@ -53,7 +54,7 @@ export default function LoginPage() {
         <span className="login-footnote">Your account is protected with secure, HttpOnly session cookies.</span>
       </section>
       <aside className="login-aside">
-        <div className="login-illustration">C</div>
+        <div className="login-illustration"><Icon name="building" size={30} /></div>
         <span className="eyebrow">ONE CAMPUS. CLEARER OPERATIONS.</span>
         <h2>Everything your<br />college needs to<br />move forward.</h2>
         <p>Manage academic operations with a secure, connected workspace for your institution.</p>
