@@ -4,7 +4,7 @@ import ResourceForm from '../components/ResourceForm.jsx';
 import ResourceTable from '../components/ResourceTable.jsx';
 import { permissionFor, resourceConfig } from '../constants/resources.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import { useConfirm, useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
 
 export default function ResourcePage({ resource: resourceProp }) {
@@ -16,6 +16,7 @@ export default function ResourcePage({ resource: resourceProp }) {
   const navigate = useNavigate();
   const { can, user } = useAuth();
   const notify = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [error, setError] = useState('');
@@ -86,7 +87,15 @@ export default function ResourcePage({ resource: resourceProp }) {
     const label = row.name || row.title || row.code || row.student_id ||
       row.registration_number || `${row.first_name || ''} ${row.last_name || ''}`.trim() || `#${row.id}`;
     const action = resourceKey === 'users' ? 'Deactivate' : 'Delete';
-    if (!window.confirm(`${action} ${config.singular} "${label}"?`)) return;
+    const confirmed = await confirm({
+      title: `${action} ${config.singular}?`,
+      message: resourceKey === 'users'
+        ? `You are about to deactivate "${label}". Their access to the system may be affected.`
+        : `You are about to delete "${label}". Please confirm to continue.`,
+      confirmLabel: action,
+      tone: 'danger'
+    });
+    if (!confirmed) return;
     try {
       await api.remove(apiResource, row.id);
       notify(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} ${resourceKey === 'users' ? 'deactivated' : 'deleted'} successfully.`);
