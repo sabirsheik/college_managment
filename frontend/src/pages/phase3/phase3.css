@@ -6,6 +6,7 @@
 .p3-panel { min-width: 0; overflow: hidden; }
 .p3-panel-heading { min-height: 77px; align-items: flex-start; }
 .p3-panel-heading h3 { line-height: 1.35; }
+.p3-panel-updated { flex: 0 0 auto; padding-top: 2px; color: #7b8b98; font-size: 11px; }
 .p3-panel-description { margin: 6px 0 0; color: #8791a0; font-size: 13px; }
 .p3-state { display: flex; flex-direction: column; gap: 5px; padding: 14px 22px 22px; color: #788391; font-size: 14px; }
 .p3-state-error { color: #9b3737; }
