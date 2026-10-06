@@ -277,7 +277,24 @@ tbody tr:hover { background: #fcfcfe; }
 .toast-error { border-color: #f2d6d4; }
 .toast-mark { display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: #e8f7ef; color: #30946b; font-size: 13px; font-weight: 700; }
 .toast-error .toast-mark { color: #b24e4e; background: #fff0ef; }
-.toast button { margin-left: auto; border: 0; color: #9aa3ae; background: transparent; font-size: 21px; }
+.toast-copy { display: grid; gap: 3px; min-width: 0; line-height: 1.45; }
+.toast-copy strong { color: #263a4c; font-size: 12px; }
+.toast-copy span { overflow-wrap: anywhere; }
+.toast button { flex: 0 0 auto; margin-left: auto; border: 0; border-radius: 6px; padding: 2px 5px; color: #8592a0; background: transparent; font-size: 20px; line-height: 1; }
+.toast button:hover { color: #263a4c; background: #f1f5f6; }
+.confirmation-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: #10233480; backdrop-filter: blur(4px); animation: confirmation-fade-in .16s ease-out; }
+.confirmation-dialog { width: min(440px, 100%); padding: 30px; border: 1px solid #e5ecef; border-radius: 18px; background: #fff; box-shadow: 0 28px 80px #10233438; animation: confirmation-rise-in .2s ease-out; }
+.confirmation-icon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 20px; border: 1px solid #dbeceb; border-radius: 15px; color: #287780; background: #eff8f6; }
+.confirmation-dialog > .eyebrow { color: #718393; font-size: 10px; letter-spacing: 1.2px; }
+.confirmation-dialog h2 { margin: 7px 0 9px; color: #1b3042; font: 700 22px Manrope, sans-serif; letter-spacing: -.35px; }
+.confirmation-dialog p { margin: 0; color: #68798a; font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.confirmation-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 27px; padding-top: 18px; border-top: 1px solid #edf1f3; }
+.confirmation-actions .button { min-height: 42px; }
+.confirmation-danger .confirmation-icon { border-color: #f1dddd; color: #bd5555; background: #fff4f2; }
+.button-danger { color: #fff; background: #b94747; box-shadow: 0 3px 8px #b9474730; }
+.button-danger:hover { background: #a63d3d; }
+@keyframes confirmation-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes confirmation-rise-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .forbidden-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; background: #f6f7fa; }
 .forbidden-code { color: #6558d9; font: 800 72px Manrope, sans-serif; }
 .forbidden-page h1 { margin: 7px 0; font: 700 26px Manrope, sans-serif; }
@@ -935,6 +952,8 @@ tbody tr:hover { background: #f2f8f7; }
 .login-illustration { color: #d6f7ee; border-color: #b9e8d633; background: #ffffff0c; }
 .login-help { border-color: #d5e9e6; color: #355d66; background: #f1f8f7; }
 .toast { border-color: #dceae5; border-radius: 11px; font-size: 13px; }
+.toast { min-height: 66px; padding: 13px 14px; border-radius: 12px; box-shadow: 0 12px 32px #142b3b1c; }
+.toast-mark { width: 30px; height: 30px; flex: 0 0 30px; }
 .notice-error, .form-error { border-radius: 9px; }
 .notice-success { border-radius: 9px; }
 .fullscreen-state { background: var(--campus-canvas); }
@@ -975,4 +994,12 @@ tbody tr:hover { background: #f2f8f7; }
   .signout-button { gap: 5px; padding: 8px; font-size: 12px; }
   .today { display: none; }
   .topbar { gap: 8px; }
+  .confirmation-dialog { padding: 24px 21px; }
+  .confirmation-actions { flex-direction: column-reverse; }
+  .confirmation-actions .button { width: 100%; }
+  .toast-stack { right: 12px; bottom: 12px; width: calc(100vw - 24px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmation-backdrop, .confirmation-dialog { animation: none; }
 }
