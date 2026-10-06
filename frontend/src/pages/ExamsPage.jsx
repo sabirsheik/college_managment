@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import ResourceTable from '../components/ResourceTable.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import { useConfirm, useToast } from '../context/ToastContext.jsx';
 import { api } from '../services/api.js';
 
 const columns = [
@@ -19,6 +19,7 @@ const initialExam = {
 export default function ExamsPage() {
   const { can, user } = useAuth();
   const notify = useToast();
+  const confirm = useConfirm();
   const [exams, setExams] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -122,7 +123,13 @@ export default function ExamsPage() {
   }
 
   async function publish() {
-    if (!selected || !window.confirm('Publish these exam results? Published results are locked.')) return;
+    if (!selected) return;
+    const confirmed = await confirm({
+      title: 'Publish exam results?',
+      message: 'Once published, these results are locked and cannot be edited.',
+      confirmLabel: 'Publish results'
+    });
+    if (!confirmed) return;
     setSaving(true);
     try {
       await api.publishExam(selected.id);
