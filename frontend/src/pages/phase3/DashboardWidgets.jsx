@@ -30,18 +30,55 @@ export function displayValue(value) {
 }
 
 export function DataPanel({ title, eyebrow = 'PORTAL', description, load, emptyMessage, children }) {
-  const [state, setState] = useState({ loading: true, error: '', data: null });
+  const [state, setState] = useState({ loading: true, refreshing: false, error: '', data: null, lastUpdated: null });
 
   useEffect(() => {
     let active = true;
-    load()
-      .then((response) => {
-        if (active) setState({ loading: false, error: '', data: response?.data ?? null });
-      })
-      .catch((error) => {
-        if (active) setState({ loading: false, error: error?.message || 'Unable to load this information.', data: null });
-      });
-    return () => { active = false; };
+    let inFlight = false;
+
+    async function refresh() {
+      if (!active || inFlight) return;
+      inFlight = true;
+      setState((current) => ({ ...current, refreshing: true }));
+      try {
+        const response = await load();
+        if (active) {
+          setState({
+            loading: false,
+            refreshing: false,
+            error: '',
+            data: response?.data ?? null,
+            lastUpdated: new Date()
+          });
+        }
+      } catch (error) {
+        if (active) {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            refreshing: false,
+            error: error?.message || 'Unable to load this information.'
+          }));
+        }
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === 'visible') void refresh();
+    }
+
+    void refresh();
+    const interval = window.setInterval(refreshWhenVisible, 30_000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshWhenVisible);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshWhenVisible);
+    };
   }, [load]);
 
   return (
@@ -52,15 +89,32 @@ export function DataPanel({ title, eyebrow = 'PORTAL', description, load, emptyM
           <h3 id={`p3-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>{title}</h3>
           {description && <p className="p3-panel-description">{description}</p>}
         </div>
+        <span className="p3-panel-updated" role="status" aria-live="polite">
+          {state.refreshing && state.lastUpdated
+            ? 'Updating…'
+            : state.lastUpdated
+              ? `Updated ${new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(state.lastUpdated)}`
+              : ''}
+        </span>
       </div>
       {state.loading ? (
         <div className="p3-state" role="status" aria-live="polite">Loading {title.toLowerCase()}…</div>
-      ) : state.error ? (
+      ) : state.error && !state.lastUpdated ? (
         <div className="p3-state p3-state-error" role="alert">
           <strong>{title} unavailable</strong>
           <span>{state.error}</span>
         </div>
-      ) : children(state.data, emptyMessage)}
+      ) : (
+        <>
+          {state.error && (
+            <div className="p3-state p3-state-error" role="alert">
+              <strong>Could not refresh {title.toLowerCase()}.</strong>
+              <span>{state.error} Showing the last successfully loaded data.</span>
+            </div>
+          )}
+          {children(state.data, emptyMessage)}
+        </>
+      )}
     </section>
   );
 }
