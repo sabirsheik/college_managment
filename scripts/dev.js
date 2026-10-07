@@ -15,7 +15,6 @@ const rootExample = resolve(root, '.env.example');
 const node = process.execPath;
 const children = new Set();
 let shuttingDown = false;
-
 function parseEnv(text) {
   return Object.fromEntries(text.split(/\r\n?|\n/)
     .map((line) => line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/))
